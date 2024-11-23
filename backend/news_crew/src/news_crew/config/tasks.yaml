@@ -1,0 +1,38 @@
+rss_parsing_task:
+  description: >
+    Parse the RSS feed, scrape article links, and extract full content. 
+    Filter the results to retain only EV-related news articles.
+  expected_output: >
+    A structured JSON file containing a list of EV-related articles with their title, 
+    publication date, author, and full content.
+  agent: rss_reader_scraper
+  output_file: ev_news_parsed.json
+
+information_gathering_task:
+  description: >
+    Enrich the filtered EV-related news articles by gathering supplementary 
+    information from multiple credible sources to add context and depth.
+  expected_output: >
+    A JSON file containing the original articles enriched with additional information 
+    and a list of sources.
+  agent: information_aggregator
+  output_file: ev_news_enriched.json
+
+quality_evaluation_task:
+  description: >
+    Evaluate the enriched EV news articles for reliability, relevance, and quality. 
+    Assign a quality score and rank the articles based on these criteria.
+  expected_output: >
+    A JSON file containing the ranked articles with their quality scores.
+  agent: quality_evaluator
+  output_file: ev_news_ranked.json
+
+news_writing_task:
+  description: >
+    Write polished and engaging EV news articles based on the ranked and evaluated data. 
+    Ensure the content is professional, reader-friendly, and formatted for publication.
+  expected_output: >
+    A markdown file with the final news articles, formatted with headlines, 
+    subheadlines, and body text.
+  agent: news_writer
+  output_file: ev_news_final.md
