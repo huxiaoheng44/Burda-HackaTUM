@@ -17,6 +17,7 @@ logs/
 # Database
 data/
 *.db
+audio/
 
 # Editor directories
 .idea/
