@@ -182,6 +182,62 @@ async def fetch_news():
         logger.error(f"Error during manual feed fetch: {str(e)}")
         raise HTTPException(status_code=500, detail="Feed fetch failed")
 
+@app.post("/generate-all-audio")
+async def generate_all_audio():
+    """Generate audio for all articles that don't have audio yet"""
+    try:
+        async with get_db() as db:
+            # Get all articles
+            result = await db.execute(
+                select(NewsArticle)
+            )
+            articles = result.scalars().all()
+            
+            tts_service = TTSService()
+            generated_count = 0
+            
+            for article in articles:
+                try:
+                    # Check if description audio exists
+                    desc_result = await db.execute(
+                        select(AudioFile).filter(
+                            AudioFile.article_id == article.id,
+                            AudioFile.type == 'description'
+                        )
+                    )
+                    if not desc_result.scalar_one_or_none():
+                        # Generate description audio
+                        await tts_service.create_audio_for_article_description(db, article.id)
+                        generated_count += 1
+                        logger.info(f"Generated description audio for article {article.id}")
+                    
+                    # Check if full audio exists
+                    full_result = await db.execute(
+                        select(AudioFile).filter(
+                            AudioFile.article_id == article.id,
+                            AudioFile.type == 'full'
+                        )
+                    )
+                    if not full_result.scalar_one_or_none():
+                        # Generate full audio
+                        await tts_service.create_audio_for_article(db, article.id)
+                        generated_count += 1
+                        logger.info(f"Generated full audio for article {article.id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error generating audio for article {article.id}: {str(e)}")
+                    continue
+            
+            return {
+                "success": True,
+                "message": f"Generated {generated_count} audio files",
+                "total_articles": len(articles)
+            }
+            
+    except Exception as e:
+        logger.error(f"Error during audio generation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Audio generation failed")
+
 # Initialize TTS service
 tts_service = TTSService(audio_dir=os.path.join(os.path.dirname(__file__), "..", "audio"))
 
