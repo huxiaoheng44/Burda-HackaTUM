@@ -99,9 +99,10 @@ async def get_article(article_id: int):
     """Get a specific news article by ID"""
     try:
         async with get_db() as db:
-            article = await db.query(NewsArticle) \
-                            .filter(NewsArticle.id == article_id) \
-                            .first()
+            result = await db.execute(
+                select(NewsArticle).filter(NewsArticle.id == article_id)
+            )
+            article = result.scalar_one_or_none()
             
             if not article:
                 raise HTTPException(status_code=404, detail="Article not found")
@@ -129,9 +130,10 @@ async def increment_views(article_id: int):
     """Increment the view count for an article"""
     try:
         async with get_db() as db:
-            article = await db.query(NewsArticle) \
-                            .filter(NewsArticle.id == article_id) \
-                            .first()
+            result = await db.execute(
+                select(NewsArticle).filter(NewsArticle.id == article_id)
+            )
+            article = result.scalar_one_or_none()
             
             if not article:
                 raise HTTPException(status_code=404, detail="Article not found")
@@ -151,9 +153,10 @@ async def increment_shares(article_id: int):
     """Increment the share count for an article"""
     try:
         async with get_db() as db:
-            article = await db.query(NewsArticle) \
-                            .filter(NewsArticle.id == article_id) \
-                            .first()
+            result = await db.execute(
+                select(NewsArticle).filter(NewsArticle.id == article_id)
+            )
+            article = result.scalar_one_or_none()
             
             if not article:
                 raise HTTPException(status_code=404, detail="Article not found")
@@ -229,9 +232,10 @@ async def get_article_audio(article_id: int):
     """Get audio metadata for a news article"""
     try:
         async with get_db() as db:
-            audio = await db.query(AudioFile) \
-                        .filter(AudioFile.article_id == article_id) \
-                        .first()
+            result = await db.execute(
+                select(AudioFile).filter(AudioFile.article_id == article_id)
+            )
+            audio = result.scalar_one_or_none()
             
             if not audio:
                 raise HTTPException(status_code=404, detail="Audio not found for this article")
