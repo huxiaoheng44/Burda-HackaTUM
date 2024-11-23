@@ -285,88 +285,26 @@ async def get_audio_file(filename: str):
 
 @app.get("/api/news/{article_id}/audio", response_model=AudioFileResponse)
 async def get_article_audio(article_id: int):
-    """Get or generate audio metadata for a news article"""
+    """Get audio metadata for a news article"""
     try:
         async with get_db() as db:
-            # Try to get existing audio, get the most recent one if multiple exist
-            result = await db.execute(
-                select(AudioFile)
-                .filter(
-                    AudioFile.article_id == article_id,
-                    AudioFile.type == "full"
-                )
-                .order_by(AudioFile.created_at.desc())
-            )
-            audio = result.scalars().first()  # Get the most recent one
-            
-            if audio:
-                # Clean up any duplicates
-                await db.execute(
-                    text("""DELETE FROM audio_files 
-                       WHERE article_id = :article_id 
-                       AND type = 'full' 
-                       AND id != :kept_id"""),
-                    {"article_id": article_id, "kept_id": audio.id}
-                )
-                await db.commit()
-                return audio
-            
-            # If no audio exists, generate it
-            try:
-                audio = await tts_service.create_audio_for_article(db, article_id)
-                return audio
-            except ValueError as e:
-                raise HTTPException(status_code=404, detail=str(e))
-            except Exception as e:
-                logger.error(f"Error generating audio for article {article_id}: {str(e)}")
-                raise HTTPException(status_code=500, detail="Audio generation failed")
-            
-    except HTTPException:
-        raise
+            audio = await tts_service.get_audio_for_article(db, article_id, "content")
+            return audio
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error handling audio request for article {article_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/news/description/{article_id}/audio", response_model=AudioFileResponse)
 async def get_article_description_audio(article_id: int):
-    """Get or generate audio for a news article's description"""
+    """Get audio metadata for a news article's description"""
     try:
         async with get_db() as db:
-            # Try to get existing audio, get the most recent one if multiple exist
-            result = await db.execute(
-                select(AudioFile)
-                .filter(
-                    AudioFile.article_id == article_id,
-                    AudioFile.type == "description"
-                )
-                .order_by(AudioFile.created_at.desc())
-            )
-            audio = result.scalars().first()  # Get the most recent one
-            
-            if audio:
-                # Clean up any duplicates
-                await db.execute(
-                    text("""DELETE FROM audio_files 
-                       WHERE article_id = :article_id 
-                       AND type = 'description' 
-                       AND id != :kept_id"""),
-                    {"article_id": article_id, "kept_id": audio.id}
-                )
-                await db.commit()
-                return audio
-            
-            # If no audio exists, generate it
-            try:
-                audio = await tts_service.create_audio_for_article_description(db, article_id)
-                return audio
-            except ValueError as e:
-                raise HTTPException(status_code=404, detail=str(e))
-            except Exception as e:
-                logger.error(f"Error generating description audio for article {article_id}: {str(e)}")
-                raise HTTPException(status_code=500, detail="Audio generation failed")
-            
-    except HTTPException:
-        raise
+            audio = await tts_service.get_audio_for_article(db, article_id, "description")
+            return audio
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error handling description audio request for article {article_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")

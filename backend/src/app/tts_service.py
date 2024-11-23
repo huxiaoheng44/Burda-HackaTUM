@@ -11,29 +11,34 @@ class TTSService:
         self.audio_dir = audio_dir
         os.makedirs(audio_dir, exist_ok=True)
     
-    def generate_audio(self, text: str, lang: str = 'en') -> tuple[str, int]:
-        """
-        Generate audio file from text and return filename and duration
-        """
-        # Generate unique filename
-        filename = f"{uuid.uuid4()}.mp3"
+    def get_audio_filename(self, article_id: int, audio_type: str) -> str:
+        """Get the standardized audio filename"""
+        return f"{article_id}_{audio_type}.mp3"
+
+    def get_audio_duration(self, text: str) -> int:
+        """Calculate approximate audio duration based on text length"""
+        words = len(text.split())
+        return int((words / 150) * 60)  # Assuming 150 words per minute
+
+    def check_audio_exists(self, article_id: int, audio_type: str) -> tuple[str, int]:
+        """Check if audio file exists and return filename and duration"""
+        filename = self.get_audio_filename(article_id, audio_type)
         filepath = os.path.join(self.audio_dir, filename)
         
-        # Generate audio file
-        tts = gTTS(text=text, lang=lang)
-        tts.save(filepath)
-        
-        # Get file duration (approximate based on text length)
-        # Assuming average speaking rate of 150 words per minute
-        words = len(text.split())
-        duration_seconds = int((words / 150) * 60)
-        
-        return filename, duration_seconds
+        if not os.path.exists(filepath):
+            return None, 0
+            
+        # Calculate duration from text length
+        if audio_type == "description":
+            text = article.description
+        else:  # content
+            text = f"{article.title}. {article.content if article.content else article.description}"
+            
+        duration = self.get_audio_duration(text)
+        return filename, duration
     
-    async def create_audio_for_article(self, db: AsyncSession, article_id: int) -> models.AudioFile:
-        """
-        Create audio file for a news article
-        """
+    async def get_audio_for_article(self, db: AsyncSession, article_id: int, audio_type: str = "content") -> models.AudioFile:
+        """Get audio metadata for an article"""
         # Get article
         result = await db.execute(
             select(models.NewsArticle).filter(models.NewsArticle.id == article_id)
@@ -42,56 +47,35 @@ class TTSService:
         if not article:
             raise ValueError(f"Article with id {article_id} not found")
         
-        # Generate text for TTS (combine title and content)
-        text_content = f"{article.title}. {article.content if article.content else article.description}"
+        # Get text content based on type
+        if audio_type == "description":
+            text_content = article.description if article.description else "No description available."
+        else:  # content
+            text_content = f"{article.title}. {article.content if article.content else article.description}"
         
-        # Generate audio file
-        filename, duration = self.generate_audio(text_content)
+        # Get filename and duration
+        filename = self.get_audio_filename(article_id, audio_type)
+        duration = self.get_audio_duration(text_content)
         
-        # Create audio file record
-        audio_file = models.AudioFile(
-            filename=filename,
-            text_content=text_content,
-            duration=duration,
-            article_id=article_id,
-            type='full'
-        )
-        
-        db.add(audio_file)
-        await db.commit()
-        await db.refresh(audio_file)
-        
-        return audio_file
-    
-    async def create_audio_for_article_description(self, db: AsyncSession, article_id: int) -> models.AudioFile:
-        """
-        Create audio file for a news article's description
-        """
-        # Get article
+        # Create or get audio file record
         result = await db.execute(
-            select(models.NewsArticle).filter(models.NewsArticle.id == article_id)
+            select(models.AudioFile).filter(
+                models.AudioFile.article_id == article_id,
+                models.AudioFile.type == audio_type
+            )
         )
-        article = result.scalar_one_or_none()
-        if not article:
-            raise ValueError(f"Article with id {article_id} not found")
+        audio_file = result.scalar_one_or_none()
         
-        # Generate text for TTS (use description)
-        text_content = article.description if article.description else "No description available."
-        
-        # Generate audio file
-        filename, duration = self.generate_audio(text_content)
-        
-        # Create audio file record
-        audio_file = models.AudioFile(
-            filename=filename,
-            text_content=text_content,
-            duration=duration,
-            article_id=article_id,
-            type="description"
-        )
-        
-        db.add(audio_file)
-        await db.commit()
-        await db.refresh(audio_file)
+        if not audio_file:
+            audio_file = models.AudioFile(
+                filename=filename,
+                text_content=text_content,
+                duration=duration,
+                article_id=article_id,
+                type=audio_type
+            )
+            db.add(audio_file)
+            await db.commit()
+            await db.refresh(audio_file)
         
         return audio_file
