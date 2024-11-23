@@ -1,16 +1,46 @@
-const API_URL = 'https://hackatum-2024.openai.azure.com/openai/deployments/text-embedding-ada-002/embeddings';
+const API_URL = 'https://hackatum-2024.openai.azure.com/openai/deployments/gpt-35-turbo/chat/completions';
 const API_KEY = '';
+
+interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+let conversationHistory: Message[] = [];
+
+export function initializeChat(newsContent: string) {
+  conversationHistory = [
+    {
+      role: 'system',
+      content: `You are a helpful AI assistant that answers questions about news articles. 
+      Here is the current article content that you should use as context for answering questions:
+      
+      ${newsContent}
+      
+      Please use this information to provide accurate and relevant responses to user queries.
+      Keep your responses concise and focused on the article content.`
+    }
+  ];
+}
 
 export async function getChatResponse(query: string): Promise<string> {
   try {
-    const response = await fetch(`${API_URL}?api-version=2023-05-15`, {
+    // Add user's message to conversation history
+    conversationHistory.push({
+      role: 'user',
+      content: query
+    });
+
+    const response = await fetch(`${API_URL}?api-version=2023-07-01-preview`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-key': API_KEY || '',
+        'api-key': API_KEY
       },
       body: JSON.stringify({
-        input: query,
+        messages: conversationHistory,
+        temperature: 0.7,
+        max_tokens: 800
       }),
     });
 
@@ -19,7 +49,15 @@ export async function getChatResponse(query: string): Promise<string> {
     }
 
     const data = await response.json();
-    return data.data[0].embedding;
+    const assistantMessage = data.choices[0].message.content;
+
+    // Add assistant's response to conversation history
+    conversationHistory.push({
+      role: 'assistant',
+      content: assistantMessage
+    });
+
+    return assistantMessage;
   } catch (error) {
     console.error('Error in chat service:', error);
     throw error;
