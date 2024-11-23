@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
 import { NewsArticle } from '../types/news';
+import PlayButton from './PlayButton';
+import AudioPlayer from './AudioPlayer';
 
 interface NewsDetailProps {
   article: NewsArticle;
@@ -9,8 +11,10 @@ interface NewsDetailProps {
 }
 
 export default function NewsDetail({ article, onBack, relatedArticles }: NewsDetailProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 mb-24">
       <button
         onClick={onBack}
         className="mb-8 flex items-center gap-2 text-gray-600 hover:text-gray-900"
@@ -20,11 +24,19 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
       </button>
 
       <article>
-        <img
-          src={article.image_url}
-          alt={article.title}
-          className="aspect-video w-full rounded-xl object-cover"
-        />
+        <div className="relative">
+          <img
+            src={article.image_url}
+            alt={article.title}
+            className="aspect-video w-full rounded-xl object-cover"
+          />
+          <div className="absolute top-4 right-4">
+            <PlayButton
+              onClick={() => setIsPlaying(true)}
+              className="bg-white/80 hover:bg-white shadow-md"
+            />
+          </div>
+        </div>
 
         <div className="mt-8">
           <h1 className="mt-4 text-4xl font-bold text-gray-900">{article.title}</h1>
@@ -59,6 +71,13 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
           </div>
         </div>
       </article>
+
+      {isPlaying && (
+        <AudioPlayer
+          articleId={article.id}
+          onClose={() => setIsPlaying(false)}
+        />
+      )}
 
       <div className="mt-16">
         <h2 className="text-2xl font-bold text-gray-900">Related Articles</h2>
