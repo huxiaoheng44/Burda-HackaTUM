@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
 import { NewsArticle } from '../types/news';
 import PlayButton from './PlayButton';
 import AudioPlayer from './AudioPlayer';
+import ChatBot from './ChatBot';
 
 interface NewsDetailProps {
   article: NewsArticle;
@@ -104,6 +105,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
           ))}
         </div>
       </div>
+      <ChatBot />
     </div>
   );
 }
