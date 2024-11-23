@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import audioService, { AudioMetadata } from '../services/audioService';
 
+import { AudioType } from '../types/audio';
+
 interface AudioPlayerProps {
     articleId: number;
+    type?: AudioType;
     onClose?: () => void;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, onClose }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onClose }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -16,9 +19,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, onClose }) => {
     useEffect(() => {
         const loadAudio = async () => {
             try {
-                let metadata = await audioService.getAudioMetadata(articleId);
+                let metadata = await audioService.getAudioMetadata(articleId, type);
                 if (!metadata) {
-                    metadata = await audioService.generateAudio(articleId);
+                    metadata = await audioService.generateAudio(articleId, type);
                 }
                 setAudioMetadata(metadata);
                 setDuration(metadata.duration);

@@ -257,5 +257,38 @@ async def get_article_audio(article_id: int):
         logger.error(f"Error handling audio request for article {article_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.get("/api/news/description/{article_id}/audio", response_model=AudioFileResponse)
+async def get_article_description_audio(article_id: int):
+    """Get or generate audio for a news article's description"""
+    try:
+        async with get_db() as db:
+            # Try to get existing audio
+            result = await db.execute(
+                select(AudioFile).filter(
+                    AudioFile.article_id == article_id,
+                    AudioFile.type == "description"
+                )
+            )
+            audio = result.scalar_one_or_none()
+            
+            if audio:
+                return audio
+            
+            # If no audio exists, generate it
+            try:
+                audio = await tts_service.create_audio_for_article_description(db, article_id)
+                return audio
+            except ValueError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except Exception as e:
+                logger.error(f"Error generating description audio for article {article_id}: {str(e)}")
+                raise HTTPException(status_code=500, detail="Audio generation failed")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error handling description audio request for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

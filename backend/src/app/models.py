@@ -12,6 +12,7 @@ class AudioFile(Base):
     text_content = Column(Text, nullable=False)
     duration = Column(Integer)  # Duration in seconds
     article_id = Column(Integer, ForeignKey('news_articles.id'))
+    type = Column(String, default='full')  # 'full' or 'description'
     created_at = Column(DateTime, server_default=func.now())
     
     article = relationship("NewsArticle", back_populates="audio_file")

@@ -53,7 +53,41 @@ class TTSService:
             filename=filename,
             text_content=text_content,
             duration=duration,
-            article_id=article_id
+            article_id=article_id,
+            type='full'
+        )
+        
+        db.add(audio_file)
+        await db.commit()
+        await db.refresh(audio_file)
+        
+        return audio_file
+    
+    async def create_audio_for_article_description(self, db: AsyncSession, article_id: int) -> models.AudioFile:
+        """
+        Create audio file for a news article's description
+        """
+        # Get article
+        result = await db.execute(
+            select(models.NewsArticle).filter(models.NewsArticle.id == article_id)
+        )
+        article = result.scalar_one_or_none()
+        if not article:
+            raise ValueError(f"Article with id {article_id} not found")
+        
+        # Generate text for TTS (use description)
+        text_content = article.description if article.description else "No description available."
+        
+        # Generate audio file
+        filename, duration = self.generate_audio(text_content)
+        
+        # Create audio file record
+        audio_file = models.AudioFile(
+            filename=filename,
+            text_content=text_content,
+            duration=duration,
+            article_id=article_id,
+            type="description"
         )
         
         db.add(audio_file)

@@ -21,26 +21,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       try {
         if (!currentArticle) return;
 
-        // 获取音频元数据
+        // Get audio metadata for description
         const audioMetadata = await AudioService.getAudioMetadata(
-          currentArticle.id
+          currentArticle.id,
+          'description'
         );
         const audioUrl = AudioService.getAudioUrl(audioMetadata.filename);
 
-        // 播放音频
+        // Play the audio
         AudioService.play(audioUrl);
 
-        // 获取音频时长并更新状态
+        // Get audio duration and update state
         const duration = audioMetadata.duration;
         if (isMounted) {
           setAudioDuration(duration);
           setIsPlaying(true);
         }
 
-        // 注册音频结束事件
+        // Register audio end event
         AudioService.onEnded(() => {
           setIsPlaying(false);
-          const nextIndex = (currentArticleIndex + 1) % articles.length; // 循环播放
+          const nextIndex = (currentArticleIndex + 1) % articles.length; // Loop playback
           setCurrentArticleIndex(nextIndex);
         });
       } catch (error) {
@@ -50,7 +51,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
 
     fetchAndPlayAudio();
 
-    // 清除事件监听器
+    // Clean up event listeners
     return () => {
       isMounted = false;
       AudioService.pause();

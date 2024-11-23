@@ -7,6 +7,7 @@ class AudioFileResponse(BaseModel):
     filename: str
     text_content: str
     duration: Optional[int] = None
+    type: str = 'full'
     created_at: datetime
     
     class Config:
