@@ -2,6 +2,16 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+class AudioFileResponse(BaseModel):
+    id: int
+    filename: str
+    text_content: str
+    duration: Optional[int] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class NewsResponse(BaseModel):
     id: int
     title: str
@@ -13,6 +23,7 @@ class NewsResponse(BaseModel):
     published_at: datetime
     views: int
     shares: int
+    audio_file: Optional[AudioFileResponse] = None
     
     class Config:
         from_attributes = True
