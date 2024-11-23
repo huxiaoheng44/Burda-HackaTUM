@@ -1,0 +1,50 @@
+import React from 'react';
+import { Clock } from 'lucide-react';
+import { NewsArticle } from '../types/news';
+
+interface NewsListProps {
+  articles: NewsArticle[];
+  onArticleClick: (id: number) => void;
+}
+
+export default function NewsList({ articles, onArticleClick }: NewsListProps) {
+  return (
+    <div className="space-y-6">
+      {articles.map((article) => (
+        <article
+          key={article.id}
+          onClick={() => onArticleClick(article.id)}
+          className="group cursor-pointer rounded-lg bg-white p-6 shadow-md transition-all hover:shadow-lg"
+        >
+          <div className="flex gap-6">
+            <div className="h-32 w-48 flex-shrink-0 overflow-hidden rounded-lg">
+              <img
+                src={article.imageUrl}
+                alt={article.title}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+            </div>
+            <div className="flex flex-col justify-between">
+              <div>
+                <h3 className="mb-2 text-xl font-bold text-gray-900 group-hover:text-blue-600">
+                  {article.title}
+                </h3>
+                <p className="text-gray-600">{article.description}</p>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {new Date(article.publishedAt).toLocaleDateString()}
+                </div>
+                <span>·</span>
+                <span>{article.views.toLocaleString()} views</span>
+                <span>·</span>
+                <span>{article.shares.toLocaleString()} shares</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
