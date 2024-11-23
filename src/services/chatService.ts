@@ -1,5 +1,5 @@
-const API_URL = process.env.VITE_AZURE_API_URL || 'https://hackatum-2024.openai.azure.com/openai/deployments/text-embedding-ada-002/embeddings';
-const API_KEY = process.env.VITE_AZURE_API_KEY;
+const API_URL = 'https://hackatum-2024.openai.azure.com/openai/deployments/text-embedding-ada-002/embeddings';
+const API_KEY = '';
 
 export async function getChatResponse(query: string): Promise<string> {
   try {
