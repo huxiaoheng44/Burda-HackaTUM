@@ -188,14 +188,15 @@ async def generate_audio(article_id: int):
     try:
         async with get_db() as db:
             # Check if audio already exists
-            existing_audio = await db.query(AudioFile) \
-                                .filter(AudioFile.article_id == article_id) \
-                                .first()
+            result = await db.execute(
+                select(AudioFile).filter(AudioFile.article_id == article_id)
+            )
+            existing_audio = result.scalar_one_or_none()
             if existing_audio:
                 return existing_audio
             
             # Generate new audio file
-            audio_file = tts_service.create_audio_for_article(db, article_id)
+            audio_file = await tts_service.create_audio_for_article(db, article_id)
             return audio_file
             
     except ValueError as e:

@@ -2,7 +2,8 @@ import os
 from gtts import gTTS
 import uuid
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from . import models
 
 class TTSService:
@@ -29,12 +30,15 @@ class TTSService:
         
         return filename, duration_seconds
     
-    def create_audio_for_article(self, db: Session, article_id: int) -> models.AudioFile:
+    async def create_audio_for_article(self, db: AsyncSession, article_id: int) -> models.AudioFile:
         """
         Create audio file for a news article
         """
         # Get article
-        article = db.query(models.NewsArticle).filter(models.NewsArticle.id == article_id).first()
+        result = await db.execute(
+            select(models.NewsArticle).filter(models.NewsArticle.id == article_id)
+        )
+        article = result.scalar_one_or_none()
         if not article:
             raise ValueError(f"Article with id {article_id} not found")
         
@@ -53,7 +57,7 @@ class TTSService:
         )
         
         db.add(audio_file)
-        db.commit()
-        db.refresh(audio_file)
+        await db.commit()
+        await db.refresh(audio_file)
         
         return audio_file
