@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
-import { getChatResponse } from '../services/chatService';
+import { getChatResponse, initializeChat } from '../services/chatService';
+import { NewsArticle } from '../types/news';
 
 interface Message {
   text: string;
   isBot: boolean;
 }
 
-export default function ChatBot() {
+interface ChatBotProps {
+  article: NewsArticle;
+}
+
+export default function ChatBot({ article }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { text: 'Hi I am Evvheel bot, ask anything you want to know about the news.', isBot: true }
   ]);
+
+  useEffect(() => {
+    // Initialize chat with article content when component mounts
+    const content = `${article.title}\n\n${article.content}`;
+    initializeChat(content);
+  }, [article]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 

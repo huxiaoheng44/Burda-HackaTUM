@@ -105,7 +105,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
           ))}
         </div>
       </div>
-      <ChatBot />
+      <ChatBot article={article} />
     </div>
   );
 }
