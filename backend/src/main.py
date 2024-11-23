@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -302,10 +302,10 @@ async def get_article_audio(article_id: int):
             if audio:
                 # Clean up any duplicates
                 await db.execute(
-                    """DELETE FROM audio_files 
+                    text("""DELETE FROM audio_files 
                        WHERE article_id = :article_id 
                        AND type = 'full' 
-                       AND id != :kept_id""",
+                       AND id != :kept_id"""),
                     {"article_id": article_id, "kept_id": audio.id}
                 )
                 await db.commit()
@@ -346,10 +346,10 @@ async def get_article_description_audio(article_id: int):
             if audio:
                 # Clean up any duplicates
                 await db.execute(
-                    """DELETE FROM audio_files 
+                    text("""DELETE FROM audio_files 
                        WHERE article_id = :article_id 
                        AND type = 'description' 
-                       AND id != :kept_id""",
+                       AND id != :kept_id"""),
                     {"article_id": article_id, "kept_id": audio.id}
                 )
                 await db.commit()
