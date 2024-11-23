@@ -38,7 +38,7 @@ export default function NewsCarousel({ articles, currentSlide, setCurrentSlide }
         >
           <div className="relative h-full">
             <img
-              src={article.imageUrl}
+              src={article.image_url}
               alt={article.title}
               className="h-full w-full object-cover"
             />

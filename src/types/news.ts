@@ -3,21 +3,15 @@ export interface NewsArticle {
   title: string;
   description: string;
   content: string;
-  publishedAt: string;
-  imageUrl: string;
+  published_at: string;
+  image_url: string;
+  link: string;
   views: number;
   shares: number;
-  author: {
-    name: string;
-    avatar: string;
-  };
   category: string;
-  tags: string[];
 }
 
 export interface NewsState {
-  featured: NewsArticle[];
-  latest: NewsArticle[];
-  trending: NewsArticle[];
+  articles: NewsArticle[];
   currentSlide: number;
 }
