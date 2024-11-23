@@ -13,6 +13,7 @@ from app.schemas import NewsResponse, HealthResponse, AudioFileResponse
 from app.feed_fetcher import FeedFetcher
 from app.scheduler import setup_scheduler
 from app.tts_service import TTSService
+from app.news_crew_service import NewsCrewService
 from fastapi.responses import FileResponse
 import os
 
@@ -181,6 +182,17 @@ async def fetch_news():
     except Exception as e:
         logger.error(f"Error during manual feed fetch: {str(e)}")
         raise HTTPException(status_code=500, detail="Feed fetch failed")
+
+@app.post("/run-news-crew")
+async def run_news_crew():
+    """Manually trigger news crew processing"""
+    try:
+        crew_service = NewsCrewService()
+        await crew_service.run_crew()
+        return {"success": True, "message": "News crew processing completed"}
+    except Exception as e:
+        logger.error(f"Error during news crew processing: {str(e)}")
+        raise HTTPException(status_code=500, detail="News crew processing failed")
 
 # Initialize TTS service
 tts_service = TTSService(audio_dir=os.path.join(os.path.dirname(__file__), "..", "audio"))
