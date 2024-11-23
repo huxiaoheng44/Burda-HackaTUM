@@ -48,6 +48,30 @@ PORT=3000
 VITE_API_URL=http://localhost:3000/api
 ```
 
+For the backend, copy `.env.example` to `.env` in the backend directory and set your Azure OpenAI API key:
+
+```env
+# Backend server configuration
+PORT=3000
+
+# Azure OpenAI configuration
+AZURE_OPENAI_ENDPOINT=https://hackatum-2024.openai.azure.com
+AZURE_OPENAI_API_KEY=your_api_key_here
+AZURE_OPENAI_DEPLOYMENT_NAME=text-embedding-ada-002
+AZURE_OPENAI_API_VERSION=2023-05-15
+```
+
+## AI News Rewriting
+
+The API supports AI-powered news rewriting using Azure OpenAI. To use this feature:
+
+1. Set up your Azure OpenAI credentials in the backend `.env` file
+2. Add `rewrite=true` query parameter to the news endpoints:
+   - `GET /api/news?rewrite=true` - Get all news with AI rewriting
+   - `GET /news/{article_id}?rewrite=true` - Get a specific article with AI rewriting
+
+The rewritten content will be available in the `rewritten_content` field of the response.
+
 ## Available Scripts
 
 - `npm run dev`: Start the frontend development server
