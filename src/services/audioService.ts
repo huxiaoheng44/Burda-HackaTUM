@@ -43,7 +43,7 @@ class AudioService {
   }
 
   getAudioUrl(filename: string): string {
-    return `${API_BASE_URL}/api/audio/${filename}`;
+    return `${API_BASE_URL}/audio/${filename}`;
   }
 
   play(url: string) {
