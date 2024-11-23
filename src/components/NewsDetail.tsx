@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { NewsArticle } from '../types/news';
 import PlayButton from './PlayButton';
 import AudioPlayer from './AudioPlayer';
@@ -13,6 +14,7 @@ interface NewsDetailProps {
 
 export default function NewsDetail({ article, onBack, relatedArticles }: NewsDetailProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 mb-24">
@@ -88,15 +90,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
               key={related.id}
               onClick={() => {
                 window.scrollTo(0, 0);
-                onBack();
-                setTimeout(() => {
-                  const element = document.querySelector(`[data-article-id="${related.id}"]`);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth' });
-                    // Simulate click on the article after scrolling
-                    (element as HTMLElement).click();
-                  }
-                }, 100);
+                navigate(`/news/${related.id}`);
               }}
               className="group cursor-pointer overflow-hidden rounded-lg bg-white shadow-md transition-all hover:shadow-lg text-left w-full"
             >
