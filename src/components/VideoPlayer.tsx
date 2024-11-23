@@ -38,30 +38,79 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
           setIsPlaying(true);
         }
 
-        // Register audio end event
-        AudioService.onEnded(() => {
+        // Register audio end event with 1 second pause
+        const handleAudioEnd = () => {
           setIsPlaying(false);
-          const nextIndex = (currentArticleIndex + 1) % articles.length; // Loop playback
-          setCurrentArticleIndex(nextIndex);
-        });
+          // Wait 1 second before playing next
+          setTimeout(() => {
+            if (isMounted) {
+              const nextIndex = (currentArticleIndex + 1) % articles.length;
+              setCurrentArticleIndex(nextIndex);
+            }
+          }, 1000);
+        };
+
+        AudioService.onEnded(handleAudioEnd);
+
+        // Clean up this specific event listener when effect reruns
+        return () => {
+          AudioService.removeEndedListener(handleAudioEnd);
+        };
       } catch (error) {
         console.error("Error fetching or playing audio:", error);
       }
     };
 
+    // Auto-play first time
     fetchAndPlayAudio();
 
-    // Clean up event listeners
+    // Clean up when component unmounts
     return () => {
       isMounted = false;
       AudioService.pause();
-      AudioService.removeEndedListener(() => {});
     };
   }, [currentArticleIndex, currentArticle, articles]);
 
+  // Initial auto-play
+  useEffect(() => {
+    const initAutoPlay = async () => {
+      try {
+        if (!currentArticle) return;
+
+        const audioMetadata = await AudioService.getAudioMetadata(
+          currentArticle.id,
+          'description'
+        );
+        const audioUrl = AudioService.getAudioUrl(audioMetadata.filename);
+
+        // Create a user interaction event handler
+        const handleUserInteraction = () => {
+          AudioService.play(audioUrl);
+          // Remove the event listeners after first interaction
+          document.removeEventListener('click', handleUserInteraction);
+          document.removeEventListener('touchstart', handleUserInteraction);
+        };
+
+        // Add event listeners for user interaction
+        document.addEventListener('click', handleUserInteraction);
+        document.addEventListener('touchstart', handleUserInteraction);
+
+        // Clean up
+        return () => {
+          document.removeEventListener('click', handleUserInteraction);
+          document.removeEventListener('touchstart', handleUserInteraction);
+        };
+      } catch (error) {
+        console.error("Error setting up auto-play:", error);
+      }
+    };
+
+    initAutoPlay();
+  }, []);
+
   return (
     <div className="relative w-full overflow-hidden bg-black">
-      {/* 视频部分 */}
+      {/* Video section */}
       <video
         src={videoSrc}
         className="w-full h-auto mx-auto"
