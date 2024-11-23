@@ -8,10 +8,13 @@ from loguru import logger
 import uvicorn
 
 from app.database import init_db, get_db
-from app.models import NewsArticle
-from app.schemas import NewsResponse, HealthResponse
+from app.models import NewsArticle, AudioFile
+from app.schemas import NewsResponse, HealthResponse, AudioFileResponse
 from app.feed_fetcher import FeedFetcher
 from app.scheduler import setup_scheduler
+from app.tts_service import TTSService
+from fastapi.responses import FileResponse
+import os
 
 # Configure logging
 logger.add("logs/api.log", rotation="1 day", retention="7 days")
@@ -175,6 +178,69 @@ async def fetch_news():
     except Exception as e:
         logger.error(f"Error during manual feed fetch: {str(e)}")
         raise HTTPException(status_code=500, detail="Feed fetch failed")
+
+# Initialize TTS service
+tts_service = TTSService(audio_dir=os.path.join(os.path.dirname(__file__), "..", "audio"))
+
+@app.post("/api/news/{article_id}/audio", response_model=AudioFileResponse)
+async def generate_audio(article_id: int):
+    """Generate audio for a news article"""
+    try:
+        async with get_db() as db:
+            # Check if audio already exists
+            existing_audio = await db.query(AudioFile) \
+                                .filter(AudioFile.article_id == article_id) \
+                                .first()
+            if existing_audio:
+                return existing_audio
+            
+            # Generate new audio file
+            audio_file = tts_service.create_audio_for_article(db, article_id)
+            return audio_file
+            
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating audio for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Audio generation failed")
+
+@app.get("/api/audio/{filename}")
+async def get_audio_file(filename: str):
+    """Get audio file by filename"""
+    try:
+        file_path = os.path.join(tts_service.audio_dir, filename)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Audio file not found")
+        
+        return FileResponse(
+            file_path,
+            media_type="audio/mpeg",
+            filename=filename
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving audio file {filename}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error serving audio file")
+
+@app.get("/api/news/{article_id}/audio", response_model=AudioFileResponse)
+async def get_article_audio(article_id: int):
+    """Get audio metadata for a news article"""
+    try:
+        async with get_db() as db:
+            audio = await db.query(AudioFile) \
+                        .filter(AudioFile.article_id == article_id) \
+                        .first()
+            
+            if not audio:
+                raise HTTPException(status_code=404, detail="Audio not found for this article")
+            
+            return audio
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching audio metadata for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
