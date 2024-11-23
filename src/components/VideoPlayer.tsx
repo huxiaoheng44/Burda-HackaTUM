@@ -24,7 +24,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         // Get audio metadata for description
         const audioMetadata = await AudioService.getAudioMetadata(
           currentArticle.id,
-          'description'
+          "description"
         );
         const audioUrl = AudioService.getAudioUrl(audioMetadata.filename);
 
@@ -79,7 +79,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
 
         const audioMetadata = await AudioService.getAudioMetadata(
           currentArticle.id,
-          'description'
+          "description"
         );
         const audioUrl = AudioService.getAudioUrl(audioMetadata.filename);
 
@@ -87,18 +87,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         const handleUserInteraction = () => {
           AudioService.play(audioUrl);
           // Remove the event listeners after first interaction
-          document.removeEventListener('click', handleUserInteraction);
-          document.removeEventListener('touchstart', handleUserInteraction);
+          document.removeEventListener("click", handleUserInteraction);
+          document.removeEventListener("touchstart", handleUserInteraction);
         };
 
         // Add event listeners for user interaction
-        document.addEventListener('click', handleUserInteraction);
-        document.addEventListener('touchstart', handleUserInteraction);
+        document.addEventListener("click", handleUserInteraction);
+        document.addEventListener("touchstart", handleUserInteraction);
 
         // Clean up
         return () => {
-          document.removeEventListener('click', handleUserInteraction);
-          document.removeEventListener('touchstart', handleUserInteraction);
+          document.removeEventListener("click", handleUserInteraction);
+          document.removeEventListener("touchstart", handleUserInteraction);
         };
       } catch (error) {
         console.error("Error setting up auto-play:", error);
@@ -122,7 +122,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         controls={false}
       />
 
-      {/* 左上角显示当前文章的图片 */}
       {currentArticle && (
         <div className="absolute top-4 left-4">
           <img
@@ -133,7 +132,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         </div>
       )}
 
-      {/* 显示当前播放的文章标题 */}
       {currentArticle && (
         <div className="absolute bottom-4 left-4 bg-white bg-opacity-75 p-2 rounded text-black">
           <h2 className="text-lg font-bold">{currentArticle.title}</h2>
