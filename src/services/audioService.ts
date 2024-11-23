@@ -35,7 +35,7 @@ class AudioService {
   }
 
   async getAudioMetadata(articleId: number): Promise<AudioMetadata> {
-    const response = await fetch(`${API_BASE_URL}/api/news/${articleId}/audio`);
+    const response = await fetch(`${API_BASE_URL}/news/${articleId}/audio`);
     if (!response.ok) {
       throw new Error("Failed to get audio metadata");
     }
@@ -43,7 +43,7 @@ class AudioService {
   }
 
   getAudioUrl(filename: string): string {
-    return `${API_BASE_URL}/audio/${filename}`;
+    return `${API_BASE_URL}/api/audio/${filename}`;
   }
 
   play(url: string) {
