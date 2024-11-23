@@ -6,11 +6,11 @@ from typing import List, Optional
 from loguru import logger
 import uvicorn
 
-from app.database import init_db, get_db
-from app.models import NewsArticle
-from app.schemas import NewsResponse, HealthResponse
-from app.feed_fetcher import FeedFetcher
-from app.scheduler import setup_scheduler
+from src.app.database import init_db, get_db
+from src.app.models import NewsArticle
+from src.app.schemas import NewsResponse, HealthResponse
+from src.app.feed_fetcher import FeedFetcher
+from src.app.scheduler import setup_scheduler
 
 # Configure logging
 logger.add("logs/api.log", rotation="1 day", retention="7 days")
