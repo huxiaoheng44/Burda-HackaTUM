@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, func
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -17,4 +17,4 @@ class NewsArticle(Base):
     published_at = Column(DateTime, index=True)
     views = Column(Integer, default=0)
     shares = Column(Integer, default=0)
-    created_at = Column(DateTime, server_default="CURRENT_TIMESTAMP")
+    created_at = Column(DateTime, server_default=func.now())
