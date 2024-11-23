@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil.parser import parse as parse_date
 from news_crew.crew import EVNewsWriterCrew
 from .database import get_db
-from .models import NewsArticle
+from .models import NewsArticle, CrewResult
 
 class NewsCrewService:
     def __init__(self):
@@ -23,30 +23,39 @@ class NewsCrewService:
             }
             self.crew.crew().kickoff(inputs=inputs)
 
-            # Read the final output file
-            output_file = os.path.join(self.output_dir, 'ev_news_final.md')
-            if not os.path.exists(output_file):
-                logger.error("News crew did not generate output file")
-                return
+            # Read all output files
+            output_files = {
+                'parsed': os.path.join(self.output_dir, 'ev_news_parsed.json'),
+                'enriched': os.path.join(self.output_dir, 'ev_news_enriched.json'),
+                'ranked': os.path.join(self.output_dir, 'ev_news_ranked.json'),
+                'final': os.path.join(self.output_dir, 'ev_news_final.md')
+            }
 
-            # Read the enriched news data
-            enriched_file = os.path.join(self.output_dir, 'ev_news_enriched.json')
-            if not os.path.exists(enriched_file):
-                logger.error("News crew did not generate enriched news data")
-                return
+            # Check if files exist
+            for file_type, file_path in output_files.items():
+                if not os.path.exists(file_path):
+                    logger.error(f"News crew did not generate {file_type} file")
+                    return
 
-            with open(enriched_file, 'r') as f:
-                news_data = json.load(f)
+            # Read all files
+            crew_data = {}
+            for file_type, file_path in output_files.items():
+                if file_path.endswith('.json'):
+                    with open(file_path, 'r') as f:
+                        crew_data[file_type] = json.load(f)
+                else:
+                    with open(file_path, 'r') as f:
+                        crew_data[file_type] = f.read()
 
             # Save to database
-            await self._save_to_db(news_data)
+            await self._save_to_db(crew_data['enriched'], crew_data)
 
         except Exception as e:
             logger.error(f"Error running news crew: {str(e)}")
             raise
 
-    async def _save_to_db(self, news_data):
-        """Save the news data to the database"""
+    async def _save_to_db(self, news_data, crew_data):
+        """Save the news data and crew results to the database"""
         async with get_db() as db:
             for article_data in news_data:
                 try:
@@ -85,6 +94,17 @@ class NewsCrewService:
                     if not existing:
                         logger.info(f"Adding new article from news crew: {article.title}")
                         db.add(article)
+                        await db.flush()  # Flush to get the article ID
+                        
+                        # Create crew result object
+                        crew_result = CrewResult(
+                            article_id=article.id,
+                            parsed_data=json.dumps(crew_data.get('parsed', [])),
+                            enriched_data=json.dumps(crew_data.get('enriched', [])),
+                            ranked_data=json.dumps(crew_data.get('ranked', [])),
+                            final_content=crew_data.get('final', '')
+                        )
+                        db.add(crew_result)
                     else:
                         logger.debug(f"Article from news crew already exists: {article.title}")
 
