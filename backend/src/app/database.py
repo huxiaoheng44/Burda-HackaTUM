@@ -1,16 +1,16 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-import os
+from loguru import logger
 
 from .models import Base
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./data/news.db")
+from .config import DATABASE_URL
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,  # Set to True only in development
     future=True
 )
 
@@ -21,17 +21,27 @@ async_session = sessionmaker(
 )
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database initialized successfully")
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to initialize database: {str(e)}")
+        raise
 
 @asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    session = async_session()
+    try:
+        yield session
+        await session.commit()
+    except SQLAlchemyError as e:
+        await session.rollback()
+        logger.error(f"Database error: {str(e)}")
+        raise
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Unexpected error during database operation: {str(e)}")
+        raise
+    finally:
+        await session.close()

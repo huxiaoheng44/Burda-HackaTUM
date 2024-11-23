@@ -103,17 +103,24 @@ class FeedFetcher:
             for feed_info in self.RSS_FEEDS:
                 feed = await self.fetch_feed(feed_info["url"])
                 if not feed:
+                    logger.warning(f"Failed to fetch feed: {feed_info['url']}")
                     continue
                 
+                logger.info(f"Processing feed: {feed_info['url']}")
                 for entry in feed.entries:
                     article = await self.process_entry(entry, feed_info["category"])
                     if article:
-                        existing = await db.query(NewsArticle) \
-                                        .filter(NewsArticle.guid == article.guid) \
-                                        .first()
+                        # Use select to check for existing article
+                        from sqlalchemy import select
+                        stmt = select(NewsArticle).where(NewsArticle.guid == article.guid)
+                        result = await db.execute(stmt)
+                        existing = result.scalar_one_or_none()
                         
                         if not existing:
+                            logger.info(f"Adding new article: {article.title}")
                             db.add(article)
+                        else:
+                            logger.debug(f"Article already exists: {article.title}")
                 
                 await db.commit()
         
