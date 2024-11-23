@@ -54,7 +54,7 @@ async def get_news(
     category: Optional[str] = None,
     days: Optional[int] = Query(None, ge=1, le=30),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100)
+    limit: int = Query(30, ge=1, le=100)
 ):
     """Get news articles with optional filtering"""
     try:
