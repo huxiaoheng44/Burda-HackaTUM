@@ -200,16 +200,51 @@ async def fetch_news():
         logger.error(f"Error during manual feed fetch: {str(e)}")
         raise HTTPException(status_code=500, detail="Feed fetch failed")
 
-@app.post("/run-news-crew")
-async def run_news_crew():
-    """Manually trigger news crew processing"""
+@app.post("/api/news/{article_id}/generate-crew")
+async def generate_crew_content(article_id: int):
+    """Generate or retrieve crew content for a news article"""
     try:
-        crew_service = NewsCrewService()
-        await crew_service.run_crew()
-        return {"success": True, "message": "News crew processing completed"}
+        async with get_db() as db:
+            # Check if crew result already exists
+            result = await db.execute(
+                select(CrewResult).filter(CrewResult.article_id == article_id)
+            )
+            existing_crew = result.scalar_one_or_none()
+            if existing_crew:
+                return CrewResultResponse(
+                    id=existing_crew.id,
+                    parsed_data=json.loads(existing_crew.parsed_data) if existing_crew.parsed_data else None,
+                    enriched_data=json.loads(existing_crew.enriched_data) if existing_crew.enriched_data else None,
+                    ranked_data=json.loads(existing_crew.ranked_data) if existing_crew.ranked_data else None,
+                    final_content=existing_crew.final_content,
+                    created_at=existing_crew.created_at
+                )
+            
+            # Generate new crew content
+            crew_service = NewsCrewService()
+            await crew_service.run_crew()
+            
+            # Get the newly created crew result
+            result = await db.execute(
+                select(CrewResult).filter(CrewResult.article_id == article_id)
+            )
+            crew = result.scalar_one_or_none()
+            if not crew:
+                raise HTTPException(status_code=404, detail="Failed to generate crew content")
+            
+            return CrewResultResponse(
+                id=crew.id,
+                parsed_data=json.loads(crew.parsed_data) if crew.parsed_data else None,
+                enriched_data=json.loads(crew.enriched_data) if crew.enriched_data else None,
+                ranked_data=json.loads(crew.ranked_data) if crew.ranked_data else None,
+                final_content=crew.final_content,
+                created_at=crew.created_at
+            )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error during news crew processing: {str(e)}")
-        raise HTTPException(status_code=500, detail="News crew processing failed")
+        logger.error(f"Error generating crew content for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate crew content")
 
 # Initialize TTS service
 tts_service = TTSService(audio_dir=os.path.join(os.path.dirname(__file__), "..", "audio"))
