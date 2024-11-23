@@ -37,8 +37,7 @@ function App() {
     ? articles
         .filter(article => 
           article.id !== currentArticle.id && 
-          (article.category === currentArticle.category || 
-           article.tags.some(tag => currentArticle.tags.includes(tag)))
+          article.category === currentArticle.category
         )
         .sort(() => Math.random() - 0.5)
         .slice(0, 3)

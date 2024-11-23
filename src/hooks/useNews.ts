@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NewsArticle } from '../types/news';
 import { Filters } from '../types/filters';
-import { mockNews } from '../data/mockNews';
 import { fetchArticles } from '../services/api';
 
 export function useNews(filters: Filters) {
-  const [articles, setArticles] = useState<NewsArticle[]>(mockNews);
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -28,8 +27,6 @@ export function useNews(filters: Filters) {
         console.error('Failed to fetch articles:', err);
         if (mounted) {
           setError(err instanceof Error ? err : new Error('Failed to fetch articles'));
-          // Fallback to mock data on error
-          setArticles(mockNews);
         }
       } finally {
         if (mounted) {
