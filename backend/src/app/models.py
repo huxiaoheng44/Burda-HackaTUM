@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, func, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Text, func, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -33,3 +33,17 @@ class NewsArticle(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     audio_file = relationship("AudioFile", back_populates="article", uselist=False)
+    crew_result = relationship("CrewResult", back_populates="article", uselist=False)
+
+class CrewResult(Base):
+    __tablename__ = "crew_results"
+    
+    id = Column(Integer, primary_key=True)
+    article_id = Column(Integer, ForeignKey('news_articles.id'))
+    parsed_data = Column(JSON)  # From ev_news_parsed.json
+    enriched_data = Column(JSON)  # From ev_news_enriched.json
+    ranked_data = Column(JSON)  # From ev_news_ranked.json
+    final_content = Column(Text)  # From ev_news_final.md
+    created_at = Column(DateTime, server_default=func.now())
+    
+    article = relationship("NewsArticle", back_populates="crew_result")

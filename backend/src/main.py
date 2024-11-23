@@ -8,8 +8,9 @@ from loguru import logger
 import uvicorn
 
 from app.database import init_db, get_db
-from app.models import NewsArticle, AudioFile
-from app.schemas import NewsResponse, HealthResponse, AudioFileResponse
+from app.models import NewsArticle, AudioFile, CrewResult
+from app.schemas import NewsResponse, HealthResponse, AudioFileResponse, CrewResultResponse
+import json
 from app.feed_fetcher import FeedFetcher
 from app.scheduler import setup_scheduler
 from app.tts_service import TTSService
@@ -87,7 +88,15 @@ async def get_news(
                     category=article.category,
                     published_at=article.published_at,
                     views=article.views,
-                    shares=article.shares
+                    shares=article.shares,
+                    crew_result=CrewResultResponse(
+                        id=article.crew_result.id,
+                        parsed_data=json.loads(article.crew_result.parsed_data) if article.crew_result and article.crew_result.parsed_data else None,
+                        enriched_data=json.loads(article.crew_result.enriched_data) if article.crew_result and article.crew_result.enriched_data else None,
+                        ranked_data=json.loads(article.crew_result.ranked_data) if article.crew_result and article.crew_result.ranked_data else None,
+                        final_content=article.crew_result.final_content,
+                        created_at=article.crew_result.created_at
+                    ) if article.crew_result else None
                 )
                 for article in articles
             ]
@@ -118,7 +127,15 @@ async def get_article(article_id: int):
                 category=article.category,
                 published_at=article.published_at,
                 views=article.views,
-                shares=article.shares
+                shares=article.shares,
+                crew_result=CrewResultResponse(
+                    id=article.crew_result.id,
+                    parsed_data=json.loads(article.crew_result.parsed_data) if article.crew_result and article.crew_result.parsed_data else None,
+                    enriched_data=json.loads(article.crew_result.enriched_data) if article.crew_result and article.crew_result.enriched_data else None,
+                    ranked_data=json.loads(article.crew_result.ranked_data) if article.crew_result and article.crew_result.ranked_data else None,
+                    final_content=article.crew_result.final_content,
+                    created_at=article.crew_result.created_at
+                ) if article.crew_result else None
             )
     except HTTPException:
         raise
@@ -238,6 +255,33 @@ async def get_audio_file(filename: str):
     except Exception as e:
         logger.error(f"Error serving audio file {filename}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error serving audio file")
+
+@app.get("/api/news/{article_id}/crew", response_model=CrewResultResponse)
+async def get_article_crew_result(article_id: int):
+    """Get crew results for a news article"""
+    try:
+        async with get_db() as db:
+            result = await db.execute(
+                select(CrewResult).filter(CrewResult.article_id == article_id)
+            )
+            crew_result = result.scalar_one_or_none()
+            
+            if not crew_result:
+                raise HTTPException(status_code=404, detail="Crew result not found")
+            
+            return CrewResultResponse(
+                id=crew_result.id,
+                parsed_data=json.loads(crew_result.parsed_data) if crew_result.parsed_data else None,
+                enriched_data=json.loads(crew_result.enriched_data) if crew_result.enriched_data else None,
+                ranked_data=json.loads(crew_result.ranked_data) if crew_result.ranked_data else None,
+                final_content=crew_result.final_content,
+                created_at=crew_result.created_at
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching crew result for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/news/{article_id}/audio", response_model=AudioFileResponse)
 async def get_article_audio(article_id: int):

@@ -1,12 +1,23 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, List, Any
 
 class AudioFileResponse(BaseModel):
     id: int
     filename: str
     text_content: str
     duration: Optional[int] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class CrewResultResponse(BaseModel):
+    id: int
+    parsed_data: Optional[List[Dict[str, Any]]] = None
+    enriched_data: Optional[List[Dict[str, Any]]] = None
+    ranked_data: Optional[List[Dict[str, Any]]] = None
+    final_content: Optional[str] = None
     created_at: datetime
     
     class Config:
@@ -24,6 +35,7 @@ class NewsResponse(BaseModel):
     views: int
     shares: int
     audio_file: Optional[AudioFileResponse] = None
+    crew_result: Optional[CrewResultResponse] = None
     
     class Config:
         from_attributes = True
