@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
+from sqlalchemy import select
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -6,11 +7,11 @@ from typing import List, Optional
 from loguru import logger
 import uvicorn
 
-from src.app.database import init_db, get_db
-from src.app.models import NewsArticle
-from src.app.schemas import NewsResponse, HealthResponse
-from src.app.feed_fetcher import FeedFetcher
-from src.app.scheduler import setup_scheduler
+from app.database import init_db, get_db
+from app.models import NewsArticle
+from app.schemas import NewsResponse, HealthResponse
+from app.feed_fetcher import FeedFetcher
+from app.scheduler import setup_scheduler
 
 # Configure logging
 logger.add("logs/api.log", rotation="1 day", retention="7 days")
@@ -55,20 +56,21 @@ async def get_news(
     """Get news articles with optional filtering"""
     try:
         async with get_db() as db:
-            query = db.query(NewsArticle)
+            query = select(NewsArticle)
             
             if category:
-                query = query.filter(NewsArticle.category == category)
+                query = query.where(NewsArticle.category == category)
             
             if days:
                 date_threshold = datetime.utcnow() - timedelta(days=days)
-                query = query.filter(NewsArticle.published_at >= date_threshold)
+                query = query.where(NewsArticle.published_at >= date_threshold)
             
-            total = await query.count()
-            articles = await query.order_by(NewsArticle.published_at.desc()) \
-                                .offset(skip) \
-                                .limit(limit) \
-                                .all()
+            query = query.order_by(NewsArticle.published_at.desc()) \
+                        .offset(skip) \
+                        .limit(limit)
+            
+            result = await db.execute(query)
+            articles = result.scalars().all()
             
             return [
                 NewsResponse(
@@ -175,4 +177,4 @@ async def fetch_news():
         raise HTTPException(status_code=500, detail="Feed fetch failed")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=3000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

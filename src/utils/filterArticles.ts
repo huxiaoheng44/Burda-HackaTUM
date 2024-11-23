@@ -20,7 +20,7 @@ export const filterArticles = (articles: NewsArticle[], filters: Filters): NewsA
 
   return articles.filter((article) => {
     const matchesCategory = !filters.category || article.category === filters.category;
-    const matchesTime = new Date(article.publishedAt) >= timeThreshold;
+    const matchesTime = new Date(article.published_at) >= timeThreshold;
     return matchesCategory && matchesTime;
   });
 };

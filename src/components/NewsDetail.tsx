@@ -21,34 +21,17 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
 
       <article>
         <img
-          src={article.imageUrl}
+          src={article.image_url}
           alt={article.title}
           className="aspect-video w-full rounded-xl object-cover"
         />
 
         <div className="mt-8">
-          <div className="flex flex-wrap gap-2">
-            {article.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
           <h1 className="mt-4 text-4xl font-bold text-gray-900">{article.title}</h1>
 
           <div className="mt-6 flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <img
-                src={article.author.avatar}
-                alt={article.author.name}
-                className="h-10 w-10 rounded-full object-cover"
-              />
               <div>
-                <p className="font-medium text-gray-900">{article.author.name}</p>
                 <p className="text-sm text-gray-500">{article.category}</p>
               </div>
             </div>
@@ -56,7 +39,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {new Date(article.publishedAt).toLocaleDateString()}
+                {new Date(article.published_at).toLocaleDateString()}
               </div>
               <div className="flex items-center gap-1">
                 <Eye className="h-4 w-4" />
@@ -87,7 +70,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
             >
               <div className="aspect-video overflow-hidden">
                 <img
-                  src={related.imageUrl}
+                  src={related.image_url}
                   alt={related.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />

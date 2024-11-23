@@ -19,7 +19,7 @@ export default function NewsList({ articles, onArticleClick }: NewsListProps) {
           <div className="flex gap-6">
             <div className="h-32 w-48 flex-shrink-0 overflow-hidden rounded-lg">
               <img
-                src={article.imageUrl}
+                src={article.image_url}
                 alt={article.title}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
               />
@@ -34,7 +34,7 @@ export default function NewsList({ articles, onArticleClick }: NewsListProps) {
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {new Date(article.publishedAt).toLocaleDateString()}
+                  {new Date(article.published_at).toLocaleDateString()}
                 </div>
                 <span>·</span>
                 <span>{article.views.toLocaleString()} views</span>
