@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NewsArticle } from "../types/news";
 import AudioService from "../services/audioService";
 
@@ -11,8 +11,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioMetadata, setAudioMetadata] = useState<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const currentArticle = articles[currentArticleIndex];
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      AudioService.pause();
+      videoRef.current?.pause();
+    } else if (audioMetadata) {
+      AudioService.play(AudioService.getAudioUrl(audioMetadata.filename));
+      videoRef.current?.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -21,26 +34,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       try {
         if (!currentArticle) return;
 
+        // Reset states when changing article
+        setIsPlaying(false);
+        AudioService.pause();
+        videoRef.current?.pause();
+
         // Get audio metadata for description
-        const audioMetadata = await AudioService.getAudioMetadata(
+        const metadata = await AudioService.getAudioMetadata(
           currentArticle.id,
           "description"
         );
-        const audioUrl = AudioService.getAudioUrl(audioMetadata.filename);
 
-        // Play the audio
-        AudioService.play(audioUrl);
-
-        // Get audio duration and update state
-        const duration = audioMetadata.duration;
         if (isMounted) {
-          setAudioDuration(duration);
+          setAudioMetadata(metadata);
+          setAudioDuration(metadata.duration);
+          
+          // Play audio and video
+          const audioUrl = AudioService.getAudioUrl(metadata.filename);
+          AudioService.play(audioUrl);
+          videoRef.current?.play();
           setIsPlaying(true);
         }
 
         // Register audio end event with 1 second pause
         const handleAudioEnd = () => {
           setIsPlaying(false);
+          videoRef.current?.pause();
           // Wait 1 second before playing next
           setTimeout(() => {
             if (isMounted) {
@@ -68,6 +87,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
     return () => {
       isMounted = false;
       AudioService.pause();
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
     };
   }, [currentArticleIndex, currentArticle, articles]);
 
@@ -112,6 +134,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
     <div className="relative w-full overflow-hidden bg-black">
       {/* Video section */}
       <video
+        ref={videoRef}
         src={videoSrc}
         className="w-full h-auto mx-auto"
         autoPlay
@@ -121,6 +144,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         disablePictureInPicture
         controls={false}
       />
+
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlayPause}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white bg-opacity-75 hover:bg-opacity-100 transition-all"
+      >
+        {isPlaying ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+      </button>
 
       {currentArticle && (
         <div className="absolute top-4 left-4">
