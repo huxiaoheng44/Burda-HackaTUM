@@ -229,22 +229,32 @@ async def get_audio_file(filename: str):
 
 @app.get("/api/news/{article_id}/audio", response_model=AudioFileResponse)
 async def get_article_audio(article_id: int):
-    """Get audio metadata for a news article"""
+    """Get or generate audio metadata for a news article"""
     try:
         async with get_db() as db:
+            # Try to get existing audio
             result = await db.execute(
                 select(AudioFile).filter(AudioFile.article_id == article_id)
             )
             audio = result.scalar_one_or_none()
             
-            if not audio:
-                raise HTTPException(status_code=404, detail="Audio not found for this article")
+            if audio:
+                return audio
             
-            return audio
+            # If no audio exists, generate it
+            try:
+                audio = await tts_service.create_audio_for_article(db, article_id)
+                return audio
+            except ValueError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+            except Exception as e:
+                logger.error(f"Error generating audio for article {article_id}: {str(e)}")
+                raise HTTPException(status_code=500, detail="Audio generation failed")
+            
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching audio metadata for article {article_id}: {str(e)}")
+        logger.error(f"Error handling audio request for article {article_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
