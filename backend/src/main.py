@@ -288,13 +288,27 @@ async def get_article_audio(article_id: int):
     """Get or generate audio metadata for a news article"""
     try:
         async with get_db() as db:
-            # Try to get existing audio
+            # Try to get existing audio, get the most recent one if multiple exist
             result = await db.execute(
-                select(AudioFile).filter(AudioFile.article_id == article_id)
+                select(AudioFile)
+                .filter(
+                    AudioFile.article_id == article_id,
+                    AudioFile.type == "full"
+                )
+                .order_by(AudioFile.created_at.desc())
             )
-            audio = result.scalar_one_or_none()
+            audio = result.scalars().first()  # Get the most recent one
             
             if audio:
+                # Clean up any duplicates
+                await db.execute(
+                    """DELETE FROM audio_files 
+                       WHERE article_id = :article_id 
+                       AND type = 'full' 
+                       AND id != :kept_id""",
+                    {"article_id": article_id, "kept_id": audio.id}
+                )
+                await db.commit()
                 return audio
             
             # If no audio exists, generate it
@@ -318,16 +332,27 @@ async def get_article_description_audio(article_id: int):
     """Get or generate audio for a news article's description"""
     try:
         async with get_db() as db:
-            # Try to get existing audio
+            # Try to get existing audio, get the most recent one if multiple exist
             result = await db.execute(
-                select(AudioFile).filter(
+                select(AudioFile)
+                .filter(
                     AudioFile.article_id == article_id,
                     AudioFile.type == "description"
                 )
+                .order_by(AudioFile.created_at.desc())
             )
-            audio = result.scalar_one_or_none()
+            audio = result.scalars().first()  # Get the most recent one
             
             if audio:
+                # Clean up any duplicates
+                await db.execute(
+                    """DELETE FROM audio_files 
+                       WHERE article_id = :article_id 
+                       AND type = 'description' 
+                       AND id != :kept_id""",
+                    {"article_id": article_id, "kept_id": audio.id}
+                )
+                await db.commit()
                 return audio
             
             # If no audio exists, generate it
