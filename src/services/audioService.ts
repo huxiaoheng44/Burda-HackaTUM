@@ -25,12 +25,9 @@ class AudioService {
   }
 
   async generateAudio(articleId: number): Promise<AudioMetadata> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/news/${articleId}/audio`,
-      {
-        method: "POST",
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/news/${articleId}/audio`, {
+      method: "POST",
+    });
     if (!response.ok) {
       throw new Error("Failed to generate audio");
     }
@@ -46,7 +43,7 @@ class AudioService {
   }
 
   getAudioUrl(filename: string): string {
-    return `${API_BASE_URL}/api/audio/${filename}`;
+    return `${API_BASE_URL}/audio/${filename}`;
   }
 
   play(url: string) {
