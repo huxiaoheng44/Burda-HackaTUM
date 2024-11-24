@@ -25,10 +25,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                 }
                 setAudioMetadata(metadata);
                 setDuration(metadata.duration);
+                setCurrentTime(0);
+                setIsPlaying(false);
             } catch (error) {
                 console.error('Failed to load audio:', error);
             }
         };
+
+        // Subscribe to audio changes
+        const unsubscribe = audioService.subscribe((newArticleId, newType) => {
+            if (newArticleId !== articleId || newType !== type) {
+                // Another audio started playing, close this player if it has onClose
+                onClose?.();
+            }
+        });
 
         loadAudio();
 
@@ -47,6 +57,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         return () => {
             audioService.removeTimeUpdateListener(handleTimeUpdate);
             audioService.removeEndedListener(handleEnded);
+            unsubscribe();
         };
     }, [articleId]);
 
@@ -57,7 +68,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.pause();
         } else {
             const audioUrl = audioService.getAudioUrl(audioMetadata.filename);
-            audioService.play(audioUrl);
+            audioService.play(audioUrl, articleId, type);
         }
         setIsPlaying(!isPlaying);
     };

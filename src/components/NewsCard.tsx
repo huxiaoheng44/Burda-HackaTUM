@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../services/api';
 import { News } from '../types/news';
 import PlayButton from './PlayButton';
 
@@ -20,7 +21,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, onPlayClick }) => {
                 {news.image_url && (
                     <div className="relative h-48">
                         <img
-                            src={news.image_url}
+                            src={news.image_url.startsWith('http') ? news.image_url : `${API_BASE_URL}${news.image_url}`}
                             alt={news.title}
                             className="w-full h-full object-cover"
                         />

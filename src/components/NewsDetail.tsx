@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../services/api';
 import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
 import { NewsArticle } from '../types/news';
 import PlayButton from './PlayButton';
@@ -12,7 +13,7 @@ interface NewsDetailProps {
 }
 
 export default function NewsDetail({ article, onBack, relatedArticles }: NewsDetailProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 mb-24">
@@ -27,7 +28,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
       <article>
         <div className="relative">
           <img
-            src={article.image_url}
+            src={article.image_url.startsWith('http') ? article.image_url : `${API_BASE_URL}${article.image_url}`}
             alt={article.title}
             className="aspect-video w-full rounded-xl object-cover"
           />
@@ -101,7 +102,7 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
             >
               <div className="aspect-video overflow-hidden">
                 <img
-                  src={related.image_url}
+                  src={related.image_url.startsWith('http') ? related.image_url : `${API_BASE_URL}${related.image_url}`}
                   alt={related.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
