@@ -89,12 +89,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
     const handleSeekChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
         setDragValue(time);
+        audioService.setCurrentTime(time);
+        setCurrentTime(time);
     };
 
     const handleSeekEnd = () => {
         setIsDragging(false);
-        audioService.setCurrentTime(dragValue);
-        setCurrentTime(dragValue);
     };
 
     const handlePlaybackRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
