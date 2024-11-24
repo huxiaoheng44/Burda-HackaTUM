@@ -27,21 +27,6 @@ img_path = os.path.join(BASE_DIR, "img")
 
 app.mount("/img", StaticFiles(directory=img_path), name="img")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Initialize database
-    await init_db()
-    
-    # Setup scheduler
-    scheduler = setup_scheduler()
-    scheduler.start()
-    
-    yield
-    
-    # Shutdown scheduler
-    scheduler.shutdown()
-
-app = FastAPI(lifespan=lifespan)
 
 # Configure CORS
 app.add_middleware(
