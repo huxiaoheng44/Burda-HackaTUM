@@ -15,6 +15,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
     const [duration, setDuration] = useState(0);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [audioMetadata, setAudioMetadata] = useState<AudioMetadata | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragValue, setDragValue] = useState(0);
 
     useEffect(() => {
         const loadAudio = async () => {
@@ -93,9 +95,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         }
         setIsPlaying(!isPlaying);
     };
-
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragValue, setDragValue] = useState(0);
 
     const handleSeekStart = () => {
         setIsDragging(true);
