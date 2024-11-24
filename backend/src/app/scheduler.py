@@ -25,11 +25,11 @@ def setup_scheduler() -> AsyncIOScheduler:
     # )
     
     # Run news crew every 2 hours
-    scheduler.add_job(
-        CronTrigger(minute=30, hour='*/2'),  # Run every 2 hours at minute 30
-        id="run_news_crew",
-        name="Run News Crew",
-        replace_existing=True
-    )
+    # scheduler.add_job(
+    #     CronTrigger(minute=30, hour='*/2'),  # Run every 2 hours at minute 30
+    #     id="run_news_crew",
+    #     name="Run News Crew",
+    #     replace_existing=True
+    # )
     
     return scheduler
