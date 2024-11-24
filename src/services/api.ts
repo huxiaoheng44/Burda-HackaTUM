@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export interface FetchArticlesParams {
   category?: string;
@@ -25,7 +25,7 @@ export async function fetchArticles(params: FetchArticlesParams = {}) {
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}/news?${queryParams}`);
+  const response = await fetch(`${API_BASE_URL}/api/news?${queryParams}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch articles: ${response.statusText}`);
   }
@@ -33,7 +33,7 @@ export async function fetchArticles(params: FetchArticlesParams = {}) {
 }
 
 export async function incrementViews(id: number) {
-  const response = await fetch(`${API_BASE_URL}/news/${id}/view`, {
+  const response = await fetch(`${API_BASE_URL}/api/news/${id}/view`, {
     method: "POST",
   });
   if (!response.ok) {
@@ -43,7 +43,7 @@ export async function incrementViews(id: number) {
 }
 
 export async function incrementShares(id: number) {
-  const response = await fetch(`${API_BASE_URL}/news/${id}/share`, {
+  const response = await fetch(`${API_BASE_URL}/api/news/${id}/share`, {
     method: "POST",
   });
   if (!response.ok) {

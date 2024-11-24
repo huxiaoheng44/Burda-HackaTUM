@@ -9,7 +9,31 @@ class AudioService {
 
   private constructor() {
     this.audioElement = new Audio();
+    this.audioElement.addEventListener('play', () => {
+      // Notify all subscribers when audio starts playing
+      this.notifyAudioStarted();
+    });
   }
+
+  private subscribers: ((articleId: number, type: AudioType) => void)[] = [];
+
+  public subscribe(callback: (articleId: number, type: AudioType) => void) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifyAudioStarted() {
+    this.subscribers.forEach(callback => {
+      if (this.currentArticleId && this.currentType) {
+        callback(this.currentArticleId, this.currentType);
+      }
+    });
+  }
+
+  private currentArticleId: number | null = null;
+  private currentType: AudioType | null = null;
 
   public static getInstance(): AudioService {
     if (!AudioService.instance) {
@@ -20,8 +44,8 @@ class AudioService {
 
   async generateAudio(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
     const endpoint = type === 'description' 
-      ? `${API_BASE_URL}/news/description/${articleId}/audio`
-      : `${API_BASE_URL}/news/${articleId}/audio`;
+      ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
+      : `${API_BASE_URL}/api/news/${articleId}/audio`;
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -34,8 +58,8 @@ class AudioService {
 
   async getAudioMetadata(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
     const endpoint = type === 'description'
-      ? `${API_BASE_URL}/news/description/${articleId}/audio`
-      : `${API_BASE_URL}/news/${articleId}/audio`;
+      ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
+      : `${API_BASE_URL}/api/news/${articleId}/audio`;
 
     const response = await fetch(endpoint);
     if (!response.ok) {
@@ -45,13 +69,18 @@ class AudioService {
   }
 
   getAudioUrl(filename: string): string {
-    return `${API_BASE_URL}/audio/${filename}`;
+    return `${API_BASE_URL}/api/audio/${filename}`;
   }
 
-  play(url: string) {
+  play(url: string, articleId?: number, type?: AudioType) {
     if (this.audioElement) {
       if (this.audioElement.src !== url) {
         this.audioElement.src = url;
+        this.audioElement.currentTime = 0;
+      }
+      if (articleId !== undefined && type !== undefined) {
+        this.currentArticleId = articleId;
+        this.currentType = type;
       }
       this.audioElement.play();
     }

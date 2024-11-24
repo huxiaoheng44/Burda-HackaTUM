@@ -21,7 +21,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       AudioService.pause();
       videoRef.current?.pause();
     } else if (audioMetadata) {
-      AudioService.play(AudioService.getAudioUrl(audioMetadata.filename));
+      AudioService.play(AudioService.getAudioUrl(audioMetadata.filename), currentArticle.id, 'description');
       videoRef.current?.play();
     }
     setIsPlaying(!isPlaying);
@@ -51,7 +51,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
           
           // Play audio and video
           const audioUrl = AudioService.getAudioUrl(metadata.filename);
-          AudioService.play(audioUrl);
+          AudioService.play(audioUrl, currentArticle.id, 'description');
           videoRef.current?.play();
           setIsPlaying(true);
         }
@@ -107,7 +107,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
 
         // Create a user interaction event handler
         const handleUserInteraction = () => {
-          AudioService.play(audioUrl);
+          AudioService.play(audioUrl, currentArticle.id, 'description');
           // Remove the event listeners after first interaction
           document.removeEventListener("click", handleUserInteraction);
           document.removeEventListener("touchstart", handleUserInteraction);
