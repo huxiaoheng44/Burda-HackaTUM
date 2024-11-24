@@ -86,6 +86,9 @@ class AudioService {
   play(url: string, articleId?: number, type?: AudioType) {
     if (this.howl) {
       this.howl.unload();
+      if (this.timeUpdateInterval) {
+        clearInterval(this.timeUpdateInterval);
+      }
     }
 
     if (articleId !== undefined && type !== undefined) {
@@ -96,8 +99,16 @@ class AudioService {
     this.howl = new Howl({
       src: [url],
       html5: true,
+      preload: true,
       onload: () => {
-        this.notifyDurationChange();
+        // Notify duration change only when we have a valid duration
+        const duration = this.howl?.duration() || 0;
+        if (duration > 0) {
+          this.notifyDurationChange();
+        }
+      },
+      onloaderror: (id, error) => {
+        console.error("Error loading audio:", error);
       },
       onplay: () => {
         this.notifyAudioStarted();
@@ -106,7 +117,9 @@ class AudioService {
           clearInterval(this.timeUpdateInterval);
         }
         this.timeUpdateInterval = setInterval(() => {
-          this.timeUpdateSubscribers.forEach(callback => callback());
+          if (this.howl?.playing()) {
+            this.timeUpdateSubscribers.forEach(callback => callback());
+          }
         }, 100);
       },
       onend: () => {
@@ -124,10 +137,21 @@ class AudioService {
         if (this.timeUpdateInterval) {
           clearInterval(this.timeUpdateInterval);
         }
+      },
+      onseek: () => {
+        // Update time immediately after seeking
+        this.timeUpdateSubscribers.forEach(callback => callback());
       }
     });
 
-    this.howl.play();
+    // Start loading the audio
+    this.howl.load();
+    // Play only after a small delay to ensure metadata is loaded
+    setTimeout(() => {
+      if (this.howl) {
+        this.howl.play();
+      }
+    }, 100);
   }
 
   pause() {

@@ -47,6 +47,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             }
         };
 
+        // Add global mouseup/touchend handlers
+        const handleGlobalMouseUp = () => {
+            if (isDragging) {
+                handleSeekEnd();
+            }
+        };
+
+        document.addEventListener('mouseup', handleGlobalMouseUp);
+        document.addEventListener('touchend', handleGlobalMouseUp);
+
         loadAudio();
 
         // Subscribe to audio changes
@@ -77,11 +87,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.removeEndedListener(handleEnded);
             unsubscribe();
             unsubscribeDuration();
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            document.removeEventListener('touchend', handleGlobalMouseUp);
             if (isPlaying) {
                 audioService.pause();
             }
         };
-    }, [articleId, type, onClose, handleTimeUpdate, handleEnded, isPlaying]);
+    }, [articleId, type, onClose, handleTimeUpdate, handleEnded, isPlaying, isDragging, handleSeekEnd]);
 
     const togglePlayPause = useCallback(() => {
         if (!audioMetadata) return;
@@ -95,21 +107,30 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         setIsPlaying(!isPlaying);
     }, [audioMetadata, isPlaying, articleId, type]);
 
-    const handleSeekStart = useCallback(() => {
+    const handleSeekStart = useCallback((event: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
         setIsDragging(true);
+        // Get the initial drag value from the input
+        const input = event.target as HTMLInputElement;
+        const time = parseFloat(input.value);
+        setDragValue(time);
     }, []);
 
     const handleSeekChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
         setDragValue(time);
+        // Update audio position in real-time while dragging
+        audioService.setCurrentTime(time);
+        setCurrentTime(time);
     }, []);
 
     const handleSeekEnd = useCallback(() => {
-        setIsDragging(false);
-        const time = dragValue;
-        audioService.setCurrentTime(time);
-        setCurrentTime(time);
-    }, [dragValue]);
+        if (isDragging) {
+            setIsDragging(false);
+            // Ensure we're at the correct position
+            audioService.setCurrentTime(dragValue);
+            setCurrentTime(dragValue);
+        }
+    }, [isDragging, dragValue]);
 
     const handlePlaybackRateChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const rate = parseFloat(event.target.value);
