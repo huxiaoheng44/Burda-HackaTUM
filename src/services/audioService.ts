@@ -1,19 +1,23 @@
 import { API_BASE_URL } from "./api";
 import { AudioFile, AudioType } from "../types/audio";
-import { Howl } from 'howler';
 
 export type AudioMetadata = AudioFile;
 
 class AudioService {
   private static instance: AudioService;
-  private howl: Howl | null = null;
-  private timeUpdateInterval: NodeJS.Timeout | null = null;
+  private audioElement: HTMLAudioElement | null = null;
 
-  private constructor() {}
+  private constructor() {
+    this.audioElement = new Audio();
+    this.audioElement.addEventListener('loadedmetadata', () => {
+      this.notifyDurationChange();
+    });
+    this.audioElement.addEventListener('play', () => {
+      this.notifyAudioStarted();
+    });
+  }
 
   private durationChangeSubscribers: (() => void)[] = [];
-  private timeUpdateSubscribers: (() => void)[] = [];
-  private endedSubscribers: (() => void)[] = [];
 
   public subscribeToDurationChange(callback: () => void) {
     this.durationChangeSubscribers.push(callback);
@@ -84,114 +88,66 @@ class AudioService {
   }
 
   play(url: string, articleId?: number, type?: AudioType) {
-    if (this.howl) {
-      this.howl.unload();
-      if (this.timeUpdateInterval) {
-        clearInterval(this.timeUpdateInterval);
+    if (this.audioElement) {
+      const isNewSource = this.audioElement.src !== url;
+      
+      if (isNewSource) {
+        this.audioElement.src = url;
+        this.audioElement.currentTime = 0;
+      }
+
+      if (articleId !== undefined && type !== undefined) {
+        this.currentArticleId = articleId;
+        this.currentType = type;
+      }
+
+      const playPromise = this.audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Error playing audio:", error);
+        });
       }
     }
-
-    if (articleId !== undefined && type !== undefined) {
-      this.currentArticleId = articleId;
-      this.currentType = type;
-    }
-
-    this.howl = new Howl({
-      src: [url],
-      html5: true,
-      preload: true,
-      onload: () => {
-        // Notify duration change only when we have a valid duration
-        const duration = this.howl?.duration() || 0;
-        if (duration > 0) {
-          this.notifyDurationChange();
-        }
-      },
-      onloaderror: (id, error) => {
-        console.error("Error loading audio:", error);
-      },
-      onplay: () => {
-        this.notifyAudioStarted();
-        // Start time update interval
-        if (this.timeUpdateInterval) {
-          clearInterval(this.timeUpdateInterval);
-        }
-        this.timeUpdateInterval = setInterval(() => {
-          if (this.howl?.playing()) {
-            this.timeUpdateSubscribers.forEach(callback => callback());
-          }
-        }, 100);
-      },
-      onend: () => {
-        this.endedSubscribers.forEach(callback => callback());
-        if (this.timeUpdateInterval) {
-          clearInterval(this.timeUpdateInterval);
-        }
-      },
-      onstop: () => {
-        if (this.timeUpdateInterval) {
-          clearInterval(this.timeUpdateInterval);
-        }
-      },
-      onpause: () => {
-        if (this.timeUpdateInterval) {
-          clearInterval(this.timeUpdateInterval);
-        }
-      },
-      onseek: () => {
-        // Update time immediately after seeking
-        this.timeUpdateSubscribers.forEach(callback => callback());
-      }
-    });
-
-    // Start loading the audio
-    this.howl.load();
-    // Play only after a small delay to ensure metadata is loaded
-    setTimeout(() => {
-      if (this.howl) {
-        this.howl.play();
-      }
-    }, 100);
   }
 
   pause() {
-    this.howl?.pause();
+    this.audioElement?.pause();
   }
 
   setPlaybackRate(rate: number) {
-    if (this.howl) {
-      this.howl.rate(rate);
+    if (this.audioElement) {
+      this.audioElement.playbackRate = rate;
     }
   }
 
   getCurrentTime(): number {
-    return this.howl ? this.howl.seek() as number : 0;
+    return this.audioElement?.currentTime || 0;
   }
 
   getDuration(): number {
-    return this.howl ? this.howl.duration() : 0;
+    return this.audioElement?.duration || 0;
   }
 
   setCurrentTime(time: number) {
-    if (this.howl) {
-      this.howl.seek(time);
+    if (this.audioElement) {
+      this.audioElement.currentTime = time;
     }
   }
 
   onTimeUpdate(callback: () => void) {
-    this.timeUpdateSubscribers.push(callback);
+    this.audioElement?.addEventListener("timeupdate", callback);
   }
 
   onEnded(callback: () => void) {
-    this.endedSubscribers.push(callback);
+    this.audioElement?.addEventListener("ended", callback);
   }
 
   removeTimeUpdateListener(callback: () => void) {
-    this.timeUpdateSubscribers = this.timeUpdateSubscribers.filter(cb => cb !== callback);
+    this.audioElement?.removeEventListener("timeupdate", callback);
   }
 
   removeEndedListener(callback: () => void) {
-    this.endedSubscribers = this.endedSubscribers.filter(cb => cb !== callback);
+    this.audioElement?.removeEventListener("ended", callback);
   }
 }
 
