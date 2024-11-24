@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { API_BASE_URL } from '../services/api';
-import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
-import { NewsArticle } from '../types/news';
-import PlayButton from './PlayButton';
-import AudioPlayer from './AudioPlayer';
-import ChatBot from './ChatBot';
+import React, { useState } from "react";
+import { API_BASE_URL } from "../services/api";
+import { ArrowLeft, Clock, Share2, Eye } from "lucide-react";
+import { NewsArticle } from "../types/news";
+import PlayButton from "./PlayButton";
+import AudioPlayer from "./AudioPlayer";
+import ChatBot from "./ChatBot";
 
 interface NewsDetailProps {
   article: NewsArticle;
@@ -12,7 +12,11 @@ interface NewsDetailProps {
   relatedArticles: NewsArticle[];
 }
 
-export default function NewsDetail({ article, onBack, relatedArticles }: NewsDetailProps) {
+export default function NewsDetail({
+  article,
+  onBack,
+  relatedArticles,
+}: NewsDetailProps) {
   const [isPlaying, setIsPlaying] = useState(true);
 
   return (
@@ -28,7 +32,11 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
       <article>
         <div className="relative">
           <img
-            src={article.image_url.startsWith('http') ? article.image_url : `${API_BASE_URL}${article.image_url}`}
+            src={
+              article.image_url.startsWith("http")
+                ? article.image_url
+                : `${API_BASE_URL}${article.image_url}`
+            }
             alt={article.title}
             className="aspect-video w-full rounded-xl object-cover"
           />
@@ -41,7 +49,9 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
         </div>
 
         <div className="mt-8">
-          <h1 className="mt-4 text-4xl font-bold text-gray-900">{article.title}</h1>
+          <h1 className="mt-4 text-4xl font-bold text-gray-900">
+            {article.title}
+          </h1>
 
           <div className="mt-6 flex items-center gap-6">
             <div className="flex items-center gap-3">
@@ -67,9 +77,24 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
           </div>
 
           <div className="prose prose-lg mt-8 max-w-none">
-            {article.content.split('\n\n').map((paragraph, index) => (
+            {article.content.split("\n\n").map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
+          </div>
+
+          {/* 添加source信息 */}
+          <div className="mt-8 text-sm text-gray-600">
+            <p>
+              Source:{" "}
+              <a
+                href={article.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                {article.link}
+              </a>
+            </p>
           </div>
         </div>
       </article>
@@ -90,9 +115,10 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
               onClick={() => {
                 window.scrollTo(0, 0);
                 onBack();
-                // Small delay to ensure the list view is rendered before selecting the new article
                 setTimeout(() => {
-                  const element = document.querySelector(`[data-article-id="${related.id}"]`);
+                  const element = document.querySelector(
+                    `[data-article-id="${related.id}"]`
+                  );
                   if (element) {
                     (element as HTMLElement).click();
                   }
@@ -102,7 +128,11 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
             >
               <div className="aspect-video overflow-hidden">
                 <img
-                  src={related.image_url.startsWith('http') ? related.image_url : `${API_BASE_URL}${related.image_url}`}
+                  src={
+                    related.image_url.startsWith("http")
+                      ? related.image_url
+                      : `${API_BASE_URL}${related.image_url}`
+                  }
                   alt={related.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
@@ -111,7 +141,9 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
                 <h3 className="font-bold text-gray-900 group-hover:text-blue-600">
                   {related.title}
                 </h3>
-                <p className="mt-2 text-sm text-gray-600">{related.description}</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  {related.description}
+                </p>
               </div>
             </button>
           ))}
