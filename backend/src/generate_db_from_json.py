@@ -17,7 +17,7 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY is not set in the environment variables")
 
 IMG_DIR = "img"
-os.makedirs(IMG_DIR, exist_ok=True) W
+os.makedirs(IMG_DIR, exist_ok=True) 
 
 # Function to parse and validate `published_at`
 def parse_published_at(date_str):
