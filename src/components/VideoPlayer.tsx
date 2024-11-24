@@ -195,7 +195,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       </button>
 
       {currentArticle && (
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-6 left-6">
           <img
             src={
               currentArticle.image_url.startsWith("http")
@@ -203,17 +203,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
                 : `${API_BASE_URL}${currentArticle.image_url}`
             }
             alt={currentArticle.title}
-            className="w-1/2 shadow-lg"
+            className="w-3/5 aspect-video object-cover shadow-lg rounded-lg"
           />
         </div>
       )}
 
       {currentArticle && (
-        <div className="absolute bottom-4 left-4 bg-white bg-opacity-75 p-2 rounded text-black">
-          <h2 className="text-lg font-bold">{currentArticle.title}</h2>
-          <p className="text-sm">{currentArticle.description}</p>
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 p-2 rounded w-max-full  text-white">
+          <p className="lg:text-xl">{currentArticle.description}</p>
         </div>
       )}
+      {/* <div className="absolute bottom-0 left-0 w-full bg-black text-white text-2xl h-12 overflow-hidden">
+        <div
+          className="whitespace-nowrap animate-scroll"
+          style={{
+            animation: `scroll 20s linear infinite`,
+          }}
+        >
+          <div>
+            {articles.map((article, index) => (
+              <span key={index} className="mx-4">
+                {article.description + "  "}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div> */}
     </div>
   );
 };
