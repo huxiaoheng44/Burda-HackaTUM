@@ -9,15 +9,15 @@ from app.database import init_db, get_db
 from app.models import NewsArticle
 from sqlalchemy import text
 
-# OpenAI DALL-E API 配置
+
 OPENAI_API_ENDPOINT = "https://api.openai.com/v1/images/generations"
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY is not set in the environment variables")
 
-# 相对路径设置
 IMG_DIR = "img"
-os.makedirs(IMG_DIR, exist_ok=True)  # 确保 img 目录存在
+os.makedirs(IMG_DIR, exist_ok=True) W
 
 # Function to parse and validate `published_at`
 def parse_published_at(date_str):
@@ -60,17 +60,16 @@ async def generate_image_from_description(description, output_dir):
                 
                 image_url = response_data["data"][0]["url"]
 
-                # 下载图片
-                unique_id = str(uuid.uuid4())  # 使用 UUID 生成唯一文件名
-                image_name = f"{unique_id}.png"  # 文件名
+                
+                unique_id = str(uuid.uuid4())
+                image_name = f"{unique_id}.png" 
                 image_path = os.path.join(output_dir, image_name)  # img/<filename>
                 async with session.get(image_url) as img_response:
                     img_data = await img_response.read()
                     with open(image_path, "wb") as img_file:
                         img_file.write(img_data)
 
-                # 返回相对路径，强制使用 `/` 分隔符
-                return f"/img/{image_name}".replace("\\", "/")  # 确保路径格式一致
+                return f"/img/{image_name}".replace("\\", "/")  
     except Exception as e:
         print(f"Error generating image: {e}")
         return None
@@ -93,12 +92,11 @@ async def store_articles_in_db(json_file_path):
     async with get_db() as session:
         try:
             for article in json_data:
-                # 使用 UUID 确保唯一性
+
                 guid = str(uuid.uuid4())
                 published_at = parse_published_at(article.get("published_at"))
                 description = article.get("description", "No description provided.")
-
-                # 检查是否已有相同标题和发布时间的记录
+                
                 existing_article = await session.execute(
                     text("SELECT id FROM news_articles WHERE title = :title AND published_at = :published_at"),
                     {"title": article["title"], "published_at": published_at}
@@ -107,22 +105,21 @@ async def store_articles_in_db(json_file_path):
                     print(f"Skipping duplicate article: {article['title']}")
                     continue
 
-                # 生成图片
+
                 image_path = await generate_image_from_description(description, IMG_DIR)
 
-                # 如果图片生成失败，跳过
+  
                 if not image_path:
                     print(f"Skipping article {guid} due to image generation failure")
                     continue
 
-                # 创建 NewsArticle 实例并添加到会话
                 news_article = NewsArticle(
                     guid=guid,
                     title=article["title"],
                     description=description,
                     content=article.get("content"),
                     link=article.get("link"),
-                    image_url=image_path,  # 存储相对路径，格式为 /img/<filename>
+                    image_url=image_path,
                     category=article.get("category", None),
                     published_at=published_at
                 )
@@ -134,7 +131,6 @@ async def store_articles_in_db(json_file_path):
                     print(f"Error inserting article {guid}: {e}")
                     await session.rollback()
 
-            # 提交事务
             print("Committing articles to the database...")
             await session.commit()
             print("Articles saved successfully!")
@@ -148,7 +144,7 @@ async def store_articles_in_db(json_file_path):
 
 
 # Default file path
-JSON_FILE_PATH = os.path.join("news_data.json")  # JSON 文件在同一目录
+JSON_FILE_PATH = os.path.join("news.json")
 
 # Run the script
 if __name__ == "__main__":
