@@ -75,13 +75,26 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <VideoPlayer videoSrc={videoFile} articles={articles} />
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="w-full">
+            <VideoPlayer videoSrc={videoFile} articles={articles} />
+          </div>
 
-        <NewsFilters
-          filters={filters}
-          categories={categories}
-          onFilterChange={setFilters}
-        />
+          {/* <div className="lg:w-1/3">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {filters.category || "Latest"} News
+              </h2>
+              <p className="text-sm text-gray-500">
+                {filteredArticles.length} articles found
+              </p>
+            </div>
+            <NewsList
+              articles={filteredArticles}
+              onArticleClick={(id) => setSelectedArticle(id)}
+            />
+          </div> */}
+        </div>
 
         {error && (
           <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-700">
@@ -95,11 +108,16 @@ function App() {
           <>
             <div className="mb-12">
               <NewsCarousel
-                articles={filteredArticles}
+                articles={filteredArticles.slice(0, 5)}
                 currentSlide={currentSlide}
                 setCurrentSlide={setCurrentSlide}
               />
             </div>
+            <NewsFilters
+              filters={filters}
+              categories={categories}
+              onFilterChange={setFilters}
+            />
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2">

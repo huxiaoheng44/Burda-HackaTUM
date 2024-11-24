@@ -1,6 +1,6 @@
-import React from 'react';
-import { Clock, Filter } from 'lucide-react';
-import { Filters, TimeFilter, TIME_FILTERS } from '../types/filters';
+import React from "react";
+import { Clock, Filter } from "lucide-react";
+import { Filters, TimeFilter, TIME_FILTERS } from "../types/filters";
 
 interface NewsFiltersProps {
   filters: Filters;
@@ -8,10 +8,14 @@ interface NewsFiltersProps {
   onFilterChange: (filters: Filters) => void;
 }
 
-export default function NewsFilters({ filters, categories, onFilterChange }: NewsFiltersProps) {
+export default function NewsFilters({
+  filters,
+  categories,
+  onFilterChange,
+}: NewsFiltersProps) {
   return (
     <div className="mb-8 flex flex-wrap items-center gap-4">
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <Filter className="h-5 w-5 text-gray-500" />
         <select
           value={filters.category || ''}
@@ -25,24 +29,27 @@ export default function NewsFilters({ filters, categories, onFilterChange }: New
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
 
       <div className="flex items-center gap-2">
         <Clock className="h-5 w-5 text-gray-500" />
         <div className="flex rounded-lg bg-white shadow-sm">
-          {(Object.entries(TIME_FILTERS) as [TimeFilter, string][]).map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => onFilterChange({ ...filters, timeFrame: value })}
-              className={`px-4 py-2 text-sm transition-colors first:rounded-l-lg last:rounded-r-lg
-                ${filters.timeFrame === value
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+          {(Object.entries(TIME_FILTERS) as [TimeFilter, string][]).map(
+            ([value, label]) => (
+              <button
+                key={value}
+                onClick={() => onFilterChange({ ...filters, timeFrame: value })}
+                className={`px-4 py-2 text-sm transition-colors first:rounded-l-lg last:rounded-r-lg
+                ${
+                  filters.timeFrame === value
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
-            >
-              {label}
-            </button>
-          ))}
+              >
+                {label}
+              </button>
+            )
+          )}
         </div>
       </div>
     </div>

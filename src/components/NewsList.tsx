@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Clock } from 'lucide-react';
-import { NewsArticle } from '../types/news';
-import PlayButton from './PlayButton';
-import AudioPlayer from './AudioPlayer';
+import React, { useState } from "react";
+import { Clock } from "lucide-react";
+import { NewsArticle } from "../types/news";
+import PlayButton from "./PlayButton";
+import AudioPlayer from "./AudioPlayer";
+import { API_BASE_URL } from "../services/api";
 
 interface NewsListProps {
   articles: NewsArticle[];
@@ -30,7 +31,8 @@ export default function NewsList({ articles, onArticleClick }: NewsListProps) {
             <div className="flex gap-6">
               <div className="h-32 w-48 flex-shrink-0 overflow-hidden rounded-lg relative">
                 <img
-                  src={article.image_url}
+                  src={`${API_BASE_URL}${article.image_url}`}
+                  // src={article.image_url}
                   alt={article.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />

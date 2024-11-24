@@ -22,7 +22,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       AudioService.pause();
       videoRef.current?.pause();
     } else if (audioMetadata) {
-      AudioService.play(AudioService.getAudioUrl(audioMetadata.filename), currentArticle.id, 'description');
+      AudioService.play(
+        AudioService.getAudioUrl(audioMetadata.filename),
+        currentArticle.id,
+        "description"
+      );
       videoRef.current?.play();
     }
     setIsPlaying(!isPlaying);
@@ -49,10 +53,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         if (isMounted) {
           setAudioMetadata(metadata);
           setAudioDuration(metadata.duration);
-          
+
           // Play audio and video
           const audioUrl = AudioService.getAudioUrl(metadata.filename);
-          AudioService.play(audioUrl, currentArticle.id, 'description');
+          AudioService.play(audioUrl, currentArticle.id, "description");
           videoRef.current?.play();
           setIsPlaying(true);
         }
@@ -108,7 +112,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
 
         // Create a user interaction event handler
         const handleUserInteraction = () => {
-          AudioService.play(audioUrl, currentArticle.id, 'description');
+          AudioService.play(audioUrl, currentArticle.id, "description");
           // Remove the event listeners after first interaction
           document.removeEventListener("click", handleUserInteraction);
           document.removeEventListener("touchstart", handleUserInteraction);
@@ -132,7 +136,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden bg-black">
+    <div className="relative w-full overflow-hidden bg-black my-10 rounded-lg">
       {/* Video section */}
       <video
         ref={videoRef}
@@ -152,13 +156,40 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         className="absolute top-4 right-4 p-2 rounded-full bg-white bg-opacity-75 hover:bg-opacity-100 transition-all"
       >
         {isPlaying ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         )}
       </button>
@@ -166,7 +197,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       {currentArticle && (
         <div className="absolute top-4 left-4">
           <img
-            src={currentArticle.image_url.startsWith('http') ? currentArticle.image_url : `${API_BASE_URL}${currentArticle.image_url}`}
+            src={
+              currentArticle.image_url.startsWith("http")
+                ? currentArticle.image_url
+                : `${API_BASE_URL}${currentArticle.image_url}`
+            }
             alt={currentArticle.title}
             className="w-1/2 shadow-lg"
           />
