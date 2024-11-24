@@ -1,25 +1,19 @@
 import { API_BASE_URL } from "./api";
 import { AudioFile, AudioType } from "../types/audio";
+import { Howl } from 'howler';
 
 export type AudioMetadata = AudioFile;
 
 class AudioService {
   private static instance: AudioService;
-  private audioElement: HTMLAudioElement | null = null;
+  private howl: Howl | null = null;
+  private timeUpdateInterval: NodeJS.Timeout | null = null;
 
-  private constructor() {
-    this.audioElement = new Audio();
-    this.audioElement.addEventListener('play', () => {
-      // Notify all subscribers when audio starts playing
-      this.notifyAudioStarted();
-    });
-    this.audioElement.addEventListener('loadedmetadata', () => {
-      // Notify duration change when metadata is loaded
-      this.notifyDurationChange();
-    });
-  }
+  private constructor() {}
 
   private durationChangeSubscribers: (() => void)[] = [];
+  private timeUpdateSubscribers: (() => void)[] = [];
+  private endedSubscribers: (() => void)[] = [];
 
   public subscribeToDurationChange(callback: () => void) {
     this.durationChangeSubscribers.push(callback);
@@ -90,72 +84,90 @@ class AudioService {
   }
 
   play(url: string, articleId?: number, type?: AudioType) {
-    if (this.audioElement) {
-      const isNewSource = this.audioElement.src !== url;
-      
-      // If currently playing something else, stop it first
-      if (this.audioElement.src && isNewSource) {
-        this.audioElement.pause();
-        this.audioElement.currentTime = 0;
-      }
-
-      if (isNewSource) {
-        this.audioElement.src = url;
-        this.audioElement.currentTime = 0;
-      }
-
-      if (articleId !== undefined && type !== undefined) {
-        this.currentArticleId = articleId;
-        this.currentType = type;
-      }
-
-      const playPromise = this.audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Error playing audio:", error);
-        });
-      }
+    if (this.howl) {
+      this.howl.unload();
     }
+
+    if (articleId !== undefined && type !== undefined) {
+      this.currentArticleId = articleId;
+      this.currentType = type;
+    }
+
+    this.howl = new Howl({
+      src: [url],
+      html5: true,
+      onload: () => {
+        this.notifyDurationChange();
+      },
+      onplay: () => {
+        this.notifyAudioStarted();
+        // Start time update interval
+        if (this.timeUpdateInterval) {
+          clearInterval(this.timeUpdateInterval);
+        }
+        this.timeUpdateInterval = setInterval(() => {
+          this.timeUpdateSubscribers.forEach(callback => callback());
+        }, 100);
+      },
+      onend: () => {
+        this.endedSubscribers.forEach(callback => callback());
+        if (this.timeUpdateInterval) {
+          clearInterval(this.timeUpdateInterval);
+        }
+      },
+      onstop: () => {
+        if (this.timeUpdateInterval) {
+          clearInterval(this.timeUpdateInterval);
+        }
+      },
+      onpause: () => {
+        if (this.timeUpdateInterval) {
+          clearInterval(this.timeUpdateInterval);
+        }
+      }
+    });
+
+    this.howl.play();
   }
 
   pause() {
-    this.audioElement?.pause();
+    this.howl?.pause();
   }
 
   setPlaybackRate(rate: number) {
-    if (this.audioElement) {
-      this.audioElement.playbackRate = rate;
+    if (this.howl) {
+      this.howl.rate(rate);
     }
   }
 
   getCurrentTime(): number {
-    return this.audioElement?.currentTime || 0;
+    return this.howl ? this.howl.seek() as number : 0;
   }
 
   getDuration(): number {
-    return this.audioElement?.duration || 0;
+    return this.howl ? this.howl.duration() : 0;
   }
 
   setCurrentTime(time: number) {
-    if (this.audioElement) {
-      this.audioElement.currentTime = time;
+    if (this.howl) {
+      this.howl.seek(time);
     }
   }
 
   onTimeUpdate(callback: () => void) {
-    this.audioElement?.addEventListener("timeupdate", callback);
+    this.timeUpdateSubscribers.push(callback);
   }
 
   onEnded(callback: () => void) {
-    this.audioElement?.addEventListener("ended", callback);
+    this.endedSubscribers.push(callback);
   }
 
   removeTimeUpdateListener(callback: () => void) {
-    this.audioElement?.removeEventListener("timeupdate", callback);
+    this.timeUpdateSubscribers = this.timeUpdateSubscribers.filter(cb => cb !== callback);
   }
 
   removeEndedListener(callback: () => void) {
-    this.audioElement?.removeEventListener("ended", callback);
+    this.endedSubscribers = this.endedSubscribers.filter(cb => cb !== callback);
   }
 }
 

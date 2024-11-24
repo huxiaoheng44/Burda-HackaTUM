@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import audioService, { AudioMetadata } from '../services/audioService';
-
 import { AudioType } from '../types/audio';
 
 interface AudioPlayerProps {
@@ -18,6 +17,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState(0);
 
+    const handleTimeUpdate = useCallback(() => {
+        if (!isDragging) {
+            const time = audioService.getCurrentTime();
+            setCurrentTime(time);
+            setDragValue(time);
+        }
+    }, [isDragging]);
+
+    const handleEnded = useCallback(() => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+        setDragValue(0);
+    }, []);
+
     useEffect(() => {
         const loadAudio = async () => {
             try {
@@ -29,16 +42,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                 setCurrentTime(0);
                 setDragValue(0);
                 setIsPlaying(false);
-                setDuration(0);
             } catch (error) {
                 console.error('Failed to load audio:', error);
             }
         };
 
+        loadAudio();
+
         // Subscribe to audio changes
         const unsubscribe = audioService.subscribe((newArticleId, newType) => {
             if (newArticleId !== articleId || newType !== type) {
-                // Another audio started playing, stop this player
                 setIsPlaying(false);
                 setCurrentTime(0);
                 setDragValue(0);
@@ -50,24 +63,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
 
         // Subscribe to duration changes
         const unsubscribeDuration = audioService.subscribeToDurationChange(() => {
-            setDuration(audioService.getDuration());
-        });
-
-        loadAudio();
-
-        const handleTimeUpdate = () => {
-            if (!isDragging) {
-                const time = audioService.getCurrentTime();
-                setCurrentTime(time);
-                setDragValue(time);
+            const newDuration = audioService.getDuration();
+            if (newDuration > 0) {
+                setDuration(newDuration);
             }
-        };
-
-        const handleEnded = () => {
-            setIsPlaying(false);
-            setCurrentTime(0);
-            setDragValue(0);
-        };
+        });
 
         audioService.onTimeUpdate(handleTimeUpdate);
         audioService.onEnded(handleEnded);
@@ -77,14 +77,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.removeEndedListener(handleEnded);
             unsubscribe();
             unsubscribeDuration();
-            // Stop playing when unmounting
             if (isPlaying) {
                 audioService.pause();
             }
         };
-    }, [articleId, isDragging]);
+    }, [articleId, type, onClose, handleTimeUpdate, handleEnded, isPlaying]);
 
-    const togglePlayPause = () => {
+    const togglePlayPause = useCallback(() => {
         if (!audioMetadata) return;
 
         if (isPlaying) {
@@ -94,34 +93,35 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.play(audioUrl, articleId, type);
         }
         setIsPlaying(!isPlaying);
-    };
+    }, [audioMetadata, isPlaying, articleId, type]);
 
-    const handleSeekStart = () => {
+    const handleSeekStart = useCallback(() => {
         setIsDragging(true);
-    };
+    }, []);
 
-    const handleSeekChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSeekChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
         setDragValue(time);
-    };
+    }, []);
 
-    const handleSeekEnd = () => {
+    const handleSeekEnd = useCallback(() => {
         setIsDragging(false);
-        audioService.setCurrentTime(dragValue);
-        setCurrentTime(dragValue);
-    };
+        const time = dragValue;
+        audioService.setCurrentTime(time);
+        setCurrentTime(time);
+    }, [dragValue]);
 
-    const handlePlaybackRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const handlePlaybackRateChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
         const rate = parseFloat(event.target.value);
         audioService.setPlaybackRate(rate);
         setPlaybackRate(rate);
-    };
+    }, []);
 
-    const formatTime = (seconds: number): string => {
+    const formatTime = useCallback((seconds: number): string => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+    }, []);
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4">
@@ -155,6 +155,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                         onMouseUp={handleSeekEnd}
                         onTouchEnd={handleSeekEnd}
                         className="flex-1 cursor-pointer"
+                        step="0.1"
                     />
                     <span className="text-sm">{formatTime(duration)}</span>
                 </div>
