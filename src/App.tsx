@@ -18,6 +18,7 @@ function App() {
     category: null,
     timeFrame: "all",
   });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { articles, loading, error } = useNews(filters);
 
@@ -27,10 +28,17 @@ function App() {
     [articles]
   );
 
-  const filteredArticles = useMemo(
-    () => filterArticles(articles, filters),
-    [articles, filters]
-  );
+  const filteredArticles = useMemo(() => {
+    const filtered = filterArticles(articles, filters);
+    if (searchQuery) {
+      return filtered.filter(
+        (article) =>
+          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          article.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return filtered;
+  }, [articles, filters, searchQuery]);
 
   const currentArticle =
     selectedArticle !== null
@@ -68,32 +76,43 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="border-b bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <header className="border-b bg-white shadow-sm flex items-center justify-between px-8 py-4">
+        <div className="flex-shrink-0">
           <img src="./logo.svg" alt="Logo" className="h-10" />
+        </div>
+
+        <div className="w-max-1/2 relative">
+          <input
+            type="text"
+            placeholder="Search for articles..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-2 pl-10 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
+              />
+            </svg>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="w-full">
             <VideoPlayer videoSrc={videoFile} articles={articles} />
           </div>
-
-          {/* <div className="lg:w-1/3">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {filters.category || "Latest"} News
-              </h2>
-              <p className="text-sm text-gray-500">
-                {filteredArticles.length} articles found
-              </p>
-            </div>
-            <NewsList
-              articles={filteredArticles}
-              onArticleClick={(id) => setSelectedArticle(id)}
-            />
-          </div> */}
         </div>
 
         {error && (
