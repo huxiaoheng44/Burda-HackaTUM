@@ -23,6 +23,7 @@ export default function NewsList({ articles, onArticleClick }: NewsListProps) {
         {articles.map((article) => (
           <article
             key={article.id}
+            data-article-id={article.id}
             onClick={() => onArticleClick(article.id)}
             className="group cursor-pointer rounded-lg bg-white p-6 shadow-md transition-all hover:shadow-lg relative"
           >

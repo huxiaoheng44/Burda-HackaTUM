@@ -15,7 +15,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, onPlayClick }) => {
     };
 
     return (
-        <Link to={`/news/${news.id}`} className="block">
+        <Link to={`/news/${news.id}`} className="block" data-article-id={news.id}>
             <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow relative">
                 {news.image_url && (
                     <div className="relative h-48">

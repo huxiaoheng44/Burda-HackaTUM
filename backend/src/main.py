@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -15,10 +15,18 @@ from app.scheduler import setup_scheduler
 from app.tts_service import TTSService
 from app.news_crew_service import NewsCrewService
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# Configure logging
-logger.add("logs/api.log", rotation="1 day", retention="7 days")
+
+app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+img_path = os.path.join(BASE_DIR, "img")
+
+
+app.mount("/img", StaticFiles(directory=img_path), name="img")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +63,7 @@ async def get_news(
     category: Optional[str] = None,
     days: Optional[int] = Query(None, ge=1, le=30),
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100)
+    limit: int = Query(30, ge=1, le=100)
 ):
     """Get news articles with optional filtering"""
     try:
@@ -183,16 +191,62 @@ async def fetch_news():
         logger.error(f"Error during manual feed fetch: {str(e)}")
         raise HTTPException(status_code=500, detail="Feed fetch failed")
 
-@app.post("/run-news-crew")
-async def run_news_crew():
-    """Manually trigger news crew processing"""
+
+@app.post("/generate-all-audio")
+async def generate_all_audio():
+    """Generate audio for all articles that don't have audio yet"""
     try:
-        crew_service = NewsCrewService()
-        await crew_service.run_crew()
-        return {"success": True, "message": "News crew processing completed"}
+        async with get_db() as db:
+            # Get all articles
+            result = await db.execute(
+                select(NewsArticle)
+            )
+            articles = result.scalars().all()
+            
+            tts_service = TTSService()
+            generated_count = 0
+            
+            for article in articles:
+                try:
+                    # Check if description audio exists
+                    desc_result = await db.execute(
+                        select(AudioFile).filter(
+                            AudioFile.article_id == article.id,
+                            AudioFile.type == 'description'
+                        )
+                    )
+                    if not desc_result.scalar_one_or_none():
+                        # Generate description audio
+                        await tts_service.create_audio_for_article_description(db, article.id)
+                        generated_count += 1
+                        logger.info(f"Generated description audio for article {article.id}")
+                    
+                    # Check if full audio exists
+                    full_result = await db.execute(
+                        select(AudioFile).filter(
+                            AudioFile.article_id == article.id,
+                            AudioFile.type == 'full'
+                        )
+                    )
+                    if not full_result.scalar_one_or_none():
+                        # Generate full audio
+                        await tts_service.create_audio_for_article(db, article.id)
+                        generated_count += 1
+                        logger.info(f"Generated full audio for article {article.id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error generating audio for article {article.id}: {str(e)}")
+                    continue
+            
+            return {
+                "success": True,
+                "message": f"Generated {generated_count} audio files",
+                "total_articles": len(articles)
+            }
+            
     except Exception as e:
-        logger.error(f"Error during news crew processing: {str(e)}")
-        raise HTTPException(status_code=500, detail="News crew processing failed")
+        logger.error(f"Error during audio generation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Audio generation failed")
 
 # Initialize TTS service
 tts_service = TTSService(audio_dir=os.path.join(os.path.dirname(__file__), "..", "audio"))
@@ -241,32 +295,28 @@ async def get_audio_file(filename: str):
 
 @app.get("/api/news/{article_id}/audio", response_model=AudioFileResponse)
 async def get_article_audio(article_id: int):
-    """Get or generate audio metadata for a news article"""
+    """Get audio metadata for a news article"""
     try:
         async with get_db() as db:
-            # Try to get existing audio
-            result = await db.execute(
-                select(AudioFile).filter(AudioFile.article_id == article_id)
-            )
-            audio = result.scalar_one_or_none()
-            
-            if audio:
-                return audio
-            
-            # If no audio exists, generate it
-            try:
-                audio = await tts_service.create_audio_for_article(db, article_id)
-                return audio
-            except ValueError as e:
-                raise HTTPException(status_code=404, detail=str(e))
-            except Exception as e:
-                logger.error(f"Error generating audio for article {article_id}: {str(e)}")
-                raise HTTPException(status_code=500, detail="Audio generation failed")
-            
-    except HTTPException:
-        raise
+            audio = await tts_service.get_audio_for_article(db, article_id, "content")
+            return audio
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error handling audio request for article {article_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/news/description/{article_id}/audio", response_model=AudioFileResponse)
+async def get_article_description_audio(article_id: int):
+    """Get audio metadata for a news article's description"""
+    try:
+        async with get_db() as db:
+            audio = await tts_service.get_audio_for_article(db, article_id, "description")
+            return audio
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error handling description audio request for article {article_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ logs/
 # Database
 data/
 *.db
+audio/
 
 # Editor directories
 .idea/
@@ -27,5 +28,4 @@ data/
 # OS files
 .DS_Store
 Thumbs.db
-/backend/venv
 /backend/venv

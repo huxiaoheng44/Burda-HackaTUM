@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Share2, Eye } from 'lucide-react';
 import { NewsArticle } from '../types/news';
 import PlayButton from './PlayButton';
 import AudioPlayer from './AudioPlayer';
+import ChatBot from './ChatBot';
 
 interface NewsDetailProps {
   article: NewsArticle;
@@ -83,9 +84,20 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
         <h2 className="text-2xl font-bold text-gray-900">Related Articles</h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           {relatedArticles.slice(0, 2).map((related) => (
-            <div
+            <button
               key={related.id}
-              className="group cursor-pointer overflow-hidden rounded-lg bg-white shadow-md transition-all hover:shadow-lg"
+              onClick={() => {
+                window.scrollTo(0, 0);
+                onBack();
+                // Small delay to ensure the list view is rendered before selecting the new article
+                setTimeout(() => {
+                  const element = document.querySelector(`[data-article-id="${related.id}"]`);
+                  if (element) {
+                    (element as HTMLElement).click();
+                  }
+                }, 0);
+              }}
+              className="group cursor-pointer overflow-hidden rounded-lg bg-white shadow-md transition-all hover:shadow-lg text-left w-full"
             >
               <div className="aspect-video overflow-hidden">
                 <img
@@ -100,10 +112,11 @@ export default function NewsDetail({ article, onBack, relatedArticles }: NewsDet
                 </h3>
                 <p className="mt-2 text-sm text-gray-600">{related.description}</p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
+      <ChatBot article={article} />
     </div>
   );
 }

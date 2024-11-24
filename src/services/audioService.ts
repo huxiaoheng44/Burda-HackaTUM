@@ -1,13 +1,7 @@
 import { API_BASE_URL } from "./api";
+import { AudioFile, AudioType } from "../types/audio";
 
-export interface AudioMetadata {
-  id: number;
-  filename: string;
-  text_content: string;
-  duration: number;
-  article_id: number;
-  created_at: string;
-}
+export type AudioMetadata = AudioFile;
 
 class AudioService {
   private static instance: AudioService;
@@ -24,20 +18,28 @@ class AudioService {
     return AudioService.instance;
   }
 
-  async generateAudio(articleId: number): Promise<AudioMetadata> {
-    const response = await fetch(`${API_BASE_URL}/news/${articleId}/audio`, {
+  async generateAudio(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
+    const endpoint = type === 'description' 
+      ? `${API_BASE_URL}/news/description/${articleId}/audio`
+      : `${API_BASE_URL}/news/${articleId}/audio`;
+
+    const response = await fetch(endpoint, {
       method: "POST",
     });
     if (!response.ok) {
-      throw new Error("Failed to generate audio");
+      throw new Error(`Failed to generate ${type} audio`);
     }
     return response.json();
   }
 
-  async getAudioMetadata(articleId: number): Promise<AudioMetadata> {
-    const response = await fetch(`${API_BASE_URL}/news/${articleId}/audio`);
+  async getAudioMetadata(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
+    const endpoint = type === 'description'
+      ? `${API_BASE_URL}/news/description/${articleId}/audio`
+      : `${API_BASE_URL}/news/${articleId}/audio`;
+
+    const response = await fetch(endpoint);
     if (!response.ok) {
-      throw new Error("Failed to get audio metadata");
+      throw new Error(`Failed to get ${type} audio metadata`);
     }
     return response.json();
   }

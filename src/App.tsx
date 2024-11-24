@@ -8,6 +8,8 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import { useNews } from "./hooks/useNews";
 import { Filters } from "./types/filters";
 import { filterArticles } from "./utils/filterArticles";
+import VideoPlayer from "./components/VideoPlayer";
+import videoFile from "./source/news.mp4";
 
 function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -73,6 +75,8 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <VideoPlayer videoSrc={videoFile} articles={articles} />
+
         <NewsFilters
           filters={filters}
           categories={categories}
