@@ -79,22 +79,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         setIsPlaying(!isPlaying);
     };
 
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragValue, setDragValue] = useState(0);
-
-    const handleSeekStart = () => {
-        setIsDragging(true);
-    };
-
-    const handleSeekChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSeek = (event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
-        setDragValue(time);
-    };
-
-    const handleSeekEnd = () => {
-        setIsDragging(false);
-        audioService.setCurrentTime(dragValue);
-        setCurrentTime(dragValue);
+        audioService.setCurrentTime(time);
     };
 
     const handlePlaybackRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -134,13 +121,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                         type="range"
                         min="0"
                         max={duration}
-                        value={isDragging ? dragValue : currentTime}
-                        onMouseDown={handleSeekStart}
-                        onTouchStart={handleSeekStart}
-                        onChange={handleSeekChange}
-                        onMouseUp={handleSeekEnd}
-                        onTouchEnd={handleSeekEnd}
-                        className="flex-1 cursor-pointer"
+                        value={currentTime}
+                        onChange={handleSeek}
+                        className="flex-1 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:cursor-pointer"
                     />
                     <span className="text-sm">{formatTime(duration)}</span>
                 </div>

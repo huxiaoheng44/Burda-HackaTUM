@@ -132,6 +132,9 @@ class AudioService {
   setCurrentTime(time: number) {
     if (this.audioElement) {
       this.audioElement.currentTime = time;
+      // Manually trigger timeupdate event since it might not fire immediately
+      const event = new Event('timeupdate');
+      this.audioElement.dispatchEvent(event);
     }
   }
 
