@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { NewsArticle } from "../types/news";
 import AudioService from "../services/audioService";
+import { API_BASE_URL } from "../services/api";
 
 interface VideoPlayerProps {
   videoSrc: string;
@@ -165,7 +166,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       {currentArticle && (
         <div className="absolute top-4 left-4">
           <img
-            src={currentArticle.image_url}
+            src={currentArticle.image_url.startsWith('http') ? currentArticle.image_url : `${API_BASE_URL}${currentArticle.image_url}`}
             alt={currentArticle.title}
             className="w-1/2 shadow-lg"
           />
