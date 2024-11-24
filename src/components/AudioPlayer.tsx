@@ -24,8 +24,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                     metadata = await audioService.generateAudio(articleId, type);
                 }
                 setAudioMetadata(metadata);
-                setDuration(metadata.duration);
                 setCurrentTime(0);
+                setDragValue(0);
                 setIsPlaying(false);
             } catch (error) {
                 console.error('Failed to load audio:', error);
@@ -38,6 +38,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                 // Another audio started playing, close this player if it has onClose
                 onClose?.();
             }
+        });
+
+        // Subscribe to duration changes
+        const unsubscribeDuration = audioService.subscribeToDurationChange(() => {
+            setDuration(audioService.getDuration());
         });
 
         loadAudio();
@@ -58,6 +63,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.removeTimeUpdateListener(handleTimeUpdate);
             audioService.removeEndedListener(handleEnded);
             unsubscribe();
+            unsubscribeDuration();
         };
     }, [articleId]);
 
@@ -73,10 +79,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         setIsPlaying(!isPlaying);
     };
 
-    const handleSeek = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragValue, setDragValue] = useState(0);
+
+    const handleSeekStart = () => {
+        setIsDragging(true);
+    };
+
+    const handleSeekChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
-        audioService.setCurrentTime(time);
-        setCurrentTime(time);
+        setDragValue(time);
+    };
+
+    const handleSeekEnd = () => {
+        setIsDragging(false);
+        audioService.setCurrentTime(dragValue);
+        setCurrentTime(dragValue);
     };
 
     const handlePlaybackRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -116,9 +134,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                         type="range"
                         min="0"
                         max={duration}
-                        value={currentTime}
-                        onChange={handleSeek}
-                        className="flex-1"
+                        value={isDragging ? dragValue : currentTime}
+                        onMouseDown={handleSeekStart}
+                        onTouchStart={handleSeekStart}
+                        onChange={handleSeekChange}
+                        onMouseUp={handleSeekEnd}
+                        onTouchEnd={handleSeekEnd}
+                        className="flex-1 cursor-pointer"
                     />
                     <span className="text-sm">{formatTime(duration)}</span>
                 </div>

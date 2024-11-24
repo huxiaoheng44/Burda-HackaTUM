@@ -13,6 +13,23 @@ class AudioService {
       // Notify all subscribers when audio starts playing
       this.notifyAudioStarted();
     });
+    this.audioElement.addEventListener('loadedmetadata', () => {
+      // Notify duration change when metadata is loaded
+      this.notifyDurationChange();
+    });
+  }
+
+  private durationChangeSubscribers: (() => void)[] = [];
+
+  public subscribeToDurationChange(callback: () => void) {
+    this.durationChangeSubscribers.push(callback);
+    return () => {
+      this.durationChangeSubscribers = this.durationChangeSubscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifyDurationChange() {
+    this.durationChangeSubscribers.forEach(callback => callback());
   }
 
   private subscribers: ((articleId: number, type: AudioType) => void)[] = [];
@@ -74,15 +91,23 @@ class AudioService {
 
   play(url: string, articleId?: number, type?: AudioType) {
     if (this.audioElement) {
-      if (this.audioElement.src !== url) {
+      const isNewSource = this.audioElement.src !== url;
+      if (isNewSource) {
         this.audioElement.src = url;
         this.audioElement.currentTime = 0;
+        // Reset duration to 0 until metadata is loaded
+        this.audioElement.duration = 0;
       }
       if (articleId !== undefined && type !== undefined) {
         this.currentArticleId = articleId;
         this.currentType = type;
       }
-      this.audioElement.play();
+      const playPromise = this.audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Error playing audio:", error);
+        });
+      }
     }
   }
 
