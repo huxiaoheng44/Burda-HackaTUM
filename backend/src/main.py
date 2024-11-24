@@ -13,7 +13,6 @@ from app.schemas import NewsResponse, HealthResponse, AudioFileResponse
 from app.feed_fetcher import FeedFetcher
 from app.scheduler import setup_scheduler
 from app.tts_service import TTSService
-from app.news_crew_service import NewsCrewService
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware

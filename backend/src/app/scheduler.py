@@ -3,7 +3,6 @@ from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 
 from .feed_fetcher import FeedFetcher
-from .news_crew_service import NewsCrewService
 
 def setup_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler()
