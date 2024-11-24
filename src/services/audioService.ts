@@ -6,49 +6,69 @@ export type AudioMetadata = AudioFile;
 class AudioService {
   private static instance: AudioService;
   private audioElement: HTMLAudioElement | null = null;
+  private playAttempts: number = 0;
+  private maxPlayAttempts: number = 3;
 
   private constructor() {
     this.audioElement = new Audio();
-    this.audioElement.addEventListener('play', () => {
-      // Notify all subscribers when audio starts playing
+    this.setupAudioListeners();
+  }
+
+  private setupAudioListeners() {
+    if (!this.audioElement) return;
+
+    this.audioElement.addEventListener("play", () => {
       this.notifyAudioStarted();
+      this.playAttempts = 0; // Reset play attempts on successful play
     });
-    this.audioElement.addEventListener('loadedmetadata', () => {
-      // Notify duration change when metadata is loaded
+
+    this.audioElement.addEventListener("loadedmetadata", () => {
       this.notifyDurationChange();
     });
-  }
 
-  private durationChangeSubscribers: (() => void)[] = [];
+    this.audioElement.addEventListener("error", (e) => {
+      console.error("Audio error:", e);
+      this.handlePlayError();
+    });
 
-  public subscribeToDurationChange(callback: () => void) {
-    this.durationChangeSubscribers.push(callback);
-    return () => {
-      this.durationChangeSubscribers = this.durationChangeSubscribers.filter(cb => cb !== callback);
-    };
-  }
-
-  private notifyDurationChange() {
-    this.durationChangeSubscribers.forEach(callback => callback());
-  }
-
-  private subscribers: ((articleId: number, type: AudioType) => void)[] = [];
-
-  public subscribe(callback: (articleId: number, type: AudioType) => void) {
-    this.subscribers.push(callback);
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
-    };
-  }
-
-  private notifyAudioStarted() {
-    this.subscribers.forEach(callback => {
-      if (this.currentArticleId && this.currentType) {
-        callback(this.currentArticleId, this.currentType);
+    // Add canplay event listener
+    this.audioElement.addEventListener("canplay", () => {
+      if (this.audioElement && this.audioElement.paused) {
+        this.tryAutoPlay();
       }
     });
   }
 
+  private async tryAutoPlay() {
+    try {
+      if (this.audioElement) {
+        // 尝试播放前确保音频已加载
+        await this.audioElement.load();
+        const playPromise = this.audioElement.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          this.playAttempts = 0; // Reset on successful play
+        }
+      }
+    } catch (error) {
+      console.error("Auto-play failed:", error);
+      this.handlePlayError();
+    }
+  }
+
+  private handlePlayError() {
+    if (this.playAttempts < this.maxPlayAttempts) {
+      this.playAttempts++;
+      console.log(`Retrying playback, attempt ${this.playAttempts}`);
+      setTimeout(() => this.tryAutoPlay(), 1000); // Wait 1 second before retry
+    } else {
+      console.error("Max play attempts reached");
+      this.playAttempts = 0; // Reset for next time
+    }
+  }
+
+  private durationChangeSubscribers: (() => void)[] = [];
+  private subscribers: ((articleId: number, type: AudioType) => void)[] = [];
   private currentArticleId: number | null = null;
   private currentType: AudioType | null = null;
 
@@ -59,10 +79,42 @@ class AudioService {
     return AudioService.instance;
   }
 
-  async generateAudio(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
-    const endpoint = type === 'description' 
-      ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
-      : `${API_BASE_URL}/api/news/${articleId}/audio`;
+  public subscribeToDurationChange(callback: () => void) {
+    this.durationChangeSubscribers.push(callback);
+    return () => {
+      this.durationChangeSubscribers = this.durationChangeSubscribers.filter(
+        (cb) => cb !== callback
+      );
+    };
+  }
+
+  private notifyDurationChange() {
+    this.durationChangeSubscribers.forEach((callback) => callback());
+  }
+
+  public subscribe(callback: (articleId: number, type: AudioType) => void) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter((cb) => cb !== callback);
+    };
+  }
+
+  private notifyAudioStarted() {
+    this.subscribers.forEach((callback) => {
+      if (this.currentArticleId && this.currentType) {
+        callback(this.currentArticleId, this.currentType);
+      }
+    });
+  }
+
+  async generateAudio(
+    articleId: number,
+    type: AudioType = "full"
+  ): Promise<AudioMetadata> {
+    const endpoint =
+      type === "description"
+        ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
+        : `${API_BASE_URL}/api/news/${articleId}/audio`;
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -73,10 +125,14 @@ class AudioService {
     return response.json();
   }
 
-  async getAudioMetadata(articleId: number, type: AudioType = 'full'): Promise<AudioMetadata> {
-    const endpoint = type === 'description'
-      ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
-      : `${API_BASE_URL}/api/news/${articleId}/audio`;
+  async getAudioMetadata(
+    articleId: number,
+    type: AudioType = "full"
+  ): Promise<AudioMetadata> {
+    const endpoint =
+      type === "description"
+        ? `${API_BASE_URL}/api/news/description/${articleId}/audio`
+        : `${API_BASE_URL}/api/news/${articleId}/audio`;
 
     const response = await fetch(endpoint);
     if (!response.ok) {
@@ -89,30 +145,34 @@ class AudioService {
     return `${API_BASE_URL}/api/audio/${filename}`;
   }
 
-  play(url: string, articleId?: number, type?: AudioType) {
-    if (this.audioElement) {
+  async play(url: string, articleId?: number, type?: AudioType) {
+    if (!this.audioElement) return;
+
+    try {
       const isNewSource = this.audioElement.src !== url;
       if (isNewSource) {
         this.audioElement.src = url;
         this.audioElement.currentTime = 0;
-        // Reset duration to 0 until metadata is loaded
-        this.audioElement.duration = 0;
+        await this.audioElement.load();
       }
+
       if (articleId !== undefined && type !== undefined) {
         this.currentArticleId = articleId;
         this.currentType = type;
       }
-      const playPromise = this.audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Error playing audio:", error);
-        });
-      }
+
+      await this.tryAutoPlay();
+    } catch (error) {
+      console.error("Error in play method:", error);
+      this.handlePlayError();
     }
   }
 
   pause() {
-    this.audioElement?.pause();
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.playAttempts = 0; // Reset play attempts on pause
+    }
   }
 
   setPlaybackRate(rate: number) {

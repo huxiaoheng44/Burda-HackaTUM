@@ -14,6 +14,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMetadata, setAudioMetadata] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isMountedRef = useRef(true); // 添加 isMounted ref
 
   const currentArticle = articles[currentArticleIndex];
 
@@ -32,8 +33,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
     setIsPlaying(!isPlaying);
   };
 
+  const playNextArticle = async () => {
+    if (!isMountedRef.current) return;
+
+    const nextIndex = (currentArticleIndex + 1) % articles.length;
+    setCurrentArticleIndex(nextIndex);
+
+    try {
+      const nextArticle = articles[nextIndex];
+      const metadata = await AudioService.getAudioMetadata(
+        nextArticle.id,
+        "description"
+      );
+
+      if (!isMountedRef.current) return;
+
+      setAudioMetadata(metadata);
+      setAudioDuration(metadata.duration);
+
+      // 直接开始播放下一篇文章
+      const audioUrl = AudioService.getAudioUrl(metadata.filename);
+      AudioService.play(audioUrl, nextArticle.id, "description");
+      videoRef.current?.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Error playing next article:", error);
+    }
+  };
+
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
 
     const fetchAndPlayAudio = async () => {
       try {
@@ -44,13 +73,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
         AudioService.pause();
         videoRef.current?.pause();
 
-        // Get audio metadata for description
+        // Fetch audio metadata
         const metadata = await AudioService.getAudioMetadata(
           currentArticle.id,
           "description"
         );
 
-        if (isMounted) {
+        if (isMountedRef.current) {
           setAudioMetadata(metadata);
           setAudioDuration(metadata.duration);
 
@@ -60,41 +89,34 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
           videoRef.current?.play();
           setIsPlaying(true);
         }
-
-        // Register audio end event with 1 second pause
-        const handleAudioEnd = () => {
-          setIsPlaying(false);
-          videoRef.current?.pause();
-          // Wait 1 second before playing next
-          setTimeout(() => {
-            if (isMounted) {
-              const nextIndex = (currentArticleIndex + 1) % articles.length;
-              setCurrentArticleIndex(nextIndex);
-            }
-          }, 1000);
-        };
-
-        AudioService.onEnded(handleAudioEnd);
-
-        // Clean up this specific event listener when effect reruns
-        return () => {
-          AudioService.removeEndedListener(handleAudioEnd);
-        };
       } catch (error) {
         console.error("Error fetching or playing audio:", error);
       }
     };
 
-    // Auto-play first time
-    fetchAndPlayAudio();
+    // Register and handle audio end
+    const handleAudioEnd = () => {
+      if (isMountedRef.current) {
+        setIsPlaying(false);
+        videoRef.current?.pause();
 
-    // Clean up when component unmounts
-    return () => {
-      isMounted = false;
-      AudioService.pause();
-      if (videoRef.current) {
-        videoRef.current.pause();
+        // 直接调用 playNextArticle 而不是使用 setTimeout
+        playNextArticle();
       }
+    };
+
+    // 只在组件首次加载时执行初始化播放
+    if (currentArticleIndex === 0) {
+      fetchAndPlayAudio();
+    }
+
+    AudioService.onEnded(handleAudioEnd);
+
+    return () => {
+      isMountedRef.current = false;
+      AudioService.removeEndedListener(handleAudioEnd);
+      AudioService.pause();
+      videoRef.current?.pause();
     };
   }, [currentArticleIndex, currentArticle, articles]);
 
@@ -112,7 +134,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
 
         // Create a user interaction event handler
         const handleUserInteraction = () => {
-          AudioService.play(audioUrl, currentArticle.id, "description");
+          if (isMountedRef.current) {
+            AudioService.play(audioUrl, currentArticle.id, "description");
+            videoRef.current?.play();
+            setIsPlaying(true);
+          }
           // Remove the event listeners after first interaction
           document.removeEventListener("click", handleUserInteraction);
           document.removeEventListener("touchstart", handleUserInteraction);
@@ -209,26 +235,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoSrc, articles }) => {
       )}
 
       {currentArticle && (
-        <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 p-2 rounded w-max-full  text-white">
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 p-2 rounded w-max-full text-white">
           <p className="lg:text-xl">{currentArticle.description}</p>
         </div>
       )}
-      {/* <div className="absolute bottom-0 left-0 w-full bg-black text-white text-2xl h-12 overflow-hidden">
-        <div
-          className="whitespace-nowrap animate-scroll"
-          style={{
-            animation: `scroll 20s linear infinite`,
-          }}
-        >
-          <div>
-            {articles.map((article, index) => (
-              <span key={index} className="mx-4">
-                {article.description + "  "}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 };
