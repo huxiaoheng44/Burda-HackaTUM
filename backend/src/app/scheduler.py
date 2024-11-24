@@ -15,13 +15,13 @@ def setup_scheduler() -> AsyncIOScheduler:
         except Exception as e:
             logger.error(f"Scheduled feed fetch failed: {str(e)}")
     
-    # Run every hour
-    scheduler.add_job(
-        fetch_feeds,
-        CronTrigger(minute=0),  # Run at the start of every hour
-        id="fetch_feeds",
-        name="Fetch RSS Feeds",
-        replace_existing=True
-    )
+    # # Run every hour
+    # scheduler.add_job(
+    #     fetch_feeds,
+    #     CronTrigger(minute=0),  # Run at the start of every hour
+    #     id="fetch_feeds",
+    #     name="Fetch RSS Feeds",
+    #     replace_existing=True
+    # )
     
     return scheduler

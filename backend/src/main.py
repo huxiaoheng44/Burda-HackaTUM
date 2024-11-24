@@ -14,10 +14,18 @@ from app.feed_fetcher import FeedFetcher
 from app.scheduler import setup_scheduler
 from app.tts_service import TTSService
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# Configure logging
-logger.add("logs/api.log", rotation="1 day", retention="7 days")
+
+app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+img_path = os.path.join(BASE_DIR, "img")
+
+
+app.mount("/img", StaticFiles(directory=img_path), name="img")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
