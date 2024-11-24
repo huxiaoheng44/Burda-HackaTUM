@@ -27,6 +27,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
                 setCurrentTime(0);
                 setDragValue(0);
                 setIsPlaying(false);
+                setDuration(0);
             } catch (error) {
                 console.error('Failed to load audio:', error);
             }
@@ -35,8 +36,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         // Subscribe to audio changes
         const unsubscribe = audioService.subscribe((newArticleId, newType) => {
             if (newArticleId !== articleId || newType !== type) {
-                // Another audio started playing, close this player if it has onClose
-                onClose?.();
+                // Another audio started playing, stop this player
+                setIsPlaying(false);
+                setCurrentTime(0);
+                setDragValue(0);
+                if (onClose) {
+                    onClose();
+                }
             }
         });
 
@@ -48,12 +54,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
         loadAudio();
 
         const handleTimeUpdate = () => {
-            setCurrentTime(audioService.getCurrentTime());
+            if (!isDragging) {
+                const time = audioService.getCurrentTime();
+                setCurrentTime(time);
+                setDragValue(time);
+            }
         };
 
         const handleEnded = () => {
             setIsPlaying(false);
             setCurrentTime(0);
+            setDragValue(0);
         };
 
         audioService.onTimeUpdate(handleTimeUpdate);
@@ -64,8 +75,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
             audioService.removeEndedListener(handleEnded);
             unsubscribe();
             unsubscribeDuration();
+            // Stop playing when unmounting
+            if (isPlaying) {
+                audioService.pause();
+            }
         };
-    }, [articleId]);
+    }, [articleId, isDragging]);
 
     const togglePlayPause = () => {
         if (!audioMetadata) return;
@@ -89,12 +104,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ articleId, type = 'full', onC
     const handleSeekChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(event.target.value);
         setDragValue(time);
-        audioService.setCurrentTime(time);
-        setCurrentTime(time);
     };
 
     const handleSeekEnd = () => {
         setIsDragging(false);
+        audioService.setCurrentTime(dragValue);
+        setCurrentTime(dragValue);
     };
 
     const handlePlaybackRateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

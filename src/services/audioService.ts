@@ -92,16 +92,23 @@ class AudioService {
   play(url: string, articleId?: number, type?: AudioType) {
     if (this.audioElement) {
       const isNewSource = this.audioElement.src !== url;
+      
+      // If currently playing something else, stop it first
+      if (this.audioElement.src && isNewSource) {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      }
+
       if (isNewSource) {
         this.audioElement.src = url;
         this.audioElement.currentTime = 0;
-        // Reset duration to 0 until metadata is loaded
-        this.audioElement.duration = 0;
       }
+
       if (articleId !== undefined && type !== undefined) {
         this.currentArticleId = articleId;
         this.currentType = type;
       }
+
       const playPromise = this.audioElement.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
